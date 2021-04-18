@@ -352,7 +352,7 @@ def _calc_lon(pp: Path) -> int:
             k = i + 1  # /* necessarily i<n-1 in this case */
         nc[i] = k
 
-    pp._lon = [pp._lon] * n
+    pp._lon = [None] * n
 
     # determine pivot points: for each i, let pivk[i] be the furthest k
     # such that all j with i<j<k lie on a line connecting i,k.

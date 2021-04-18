@@ -291,7 +291,7 @@ def detrand(x: int, y: int) -> int:
 
 
 def BM_GET(bm: Image.Image, x: int, y: int):
-    return bm.getpixel((x, y)) if 0 <= x < bm.width and 0 <= y < bm.height else 0
+    return bm.getpixel((x, y)) == 0 if 0 <= x < bm.width and 0 <= y < bm.height else False
 
 
 def majority(bm: Image, x: int, y: int) -> int:
@@ -432,7 +432,7 @@ def findnext(bm: Image.Image, xp: int, yp: int) -> Optional[Tuple[Union[int], in
     for y in range(yp, -1, -1):
         x = x0
         while bm.width > x >= 0:
-            if bm.getpixel((x, y)):
+            if BM_GET(bm, x, y):
                 # /* found */
                 return x, y
             x += 1

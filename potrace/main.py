@@ -11,7 +11,7 @@ import sys
 from PIL import Image
 
 from .decompose import bm_to_pathlist
-from .tracer import process_path
+from .tracer import process_path, POTRACE_CORNER
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -117,21 +117,16 @@ def run():
                     else:
                         parts.append("M%d,%d" % (path._x0, path._y0))
                         for segment in path._fcurve.segments:
-                            # if segment.tag == POTRACE_CORNER:
-                            v = segment.c[1]
-                            if v.x == 0:
-                                continue
-                            parts.append("L%f,%f" % (v.x, v.y))
-                            b = segment.c[2]
-                            parts.append("L%f,%f" % (b.x, b.y))
-                            # else:
-                            #
-                            #     u = segment.c[0]
-                            #     w = segment.c[1]
-                            #     b = segment.c[2]
-                            #     if u.x == 0:
-                            #         continue
-                            #     parts.append("Q%f,%f %f,%f" % (w.x, w.y, b.x, b.y))
+                            if segment.tag == POTRACE_CORNER:
+                                v = segment.c[1]
+                                parts.append("L%f,%f" % (v.x, v.y))
+                                b = segment.c[2]
+                                parts.append("L%f,%f" % (b.x, b.y))
+                            else:
+                                u = segment.c[0]
+                                w = segment.c[1]
+                                b = segment.c[2]
+                                parts.append("Q%f,%f %f,%f" % (w.x, w.y, b.x, b.y))
                     parts.append('z')
                 fp.write('<path stroke="black" fill="none" d="%s"/>' % "".join(parts))
                 fp.write("</svg>")
