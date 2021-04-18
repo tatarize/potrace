@@ -1548,9 +1548,6 @@ parser.add_argument(
     default="minority",
     help="how to resolve ambiguities in path decomposition",
 )
-parser.add_argument(
-    "-P", "--profile", type=int, default=None, help="Specify a settings profile index"
-)
 parser.add_argument("-t", "--turdsize", type=int, help="suppress speckles of up to this size (default 2)", default=2)
 parser.add_argument("-a", "--alphamax", type=float, help="corner threshold parameter", default=1)
 parser.add_argument("-n", "--longcurve", action="store_true", help="turn off curve optimization")
