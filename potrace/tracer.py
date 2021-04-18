@@ -1,10 +1,6 @@
-import argparse
 import math
-import sys
 
-from PIL import Image
-
-from structures import *
+from .structures import *
 
 
 # /* segment tags */
@@ -986,7 +982,7 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
     pt = [None] * (m + 1)  # /* pt[m+1] */
     pen = [None] * (m + 1)  # /* pen[m+1] */
     len = [None] * (m + 1)  # /* len[m+1] */
-    opt = [None] * (m + 1)  # /* opt[m+1] */
+    opt = [opti_t() for i in range(m+1)]  # /* opt[m+1] */
 
     convc = [None] * m  # /* conv[m]: pre-computed convexities */
     areac = [None] * (m + 1)  # /* cumarea[m+1]: cache for fast area computation */
@@ -1028,20 +1024,20 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
     # /* Fixme: we always start from a fixed point
     # -- should find the best curve cyclically */
 
-    o = opti_t()
     for j in range(1, m + 1):
         # /* calculate best path from 0 to j */
         pt[j] = j - 1
         pen[j] = pen[j - 1]
         len[j] = len[j - 1] + 1
         for i in range(j - 2, -1, -1):
+            o = opt[j]
             if opti_penalty(pp, i, j % m, o, opttolerance, convc, areac):
                 break
             if len[j] > len[i] + 1 or (
                 len[j] == len[i] + 1 and pen[j] > pen[i] + o.pen
             ):
                 pt[j] = i
-                pen[j] = pen[i] + o.pen
+                pen[j] = pen[i] + opt[j].pen
                 len[j] = len[i] + 1
                 opt[j] = o
     om = len[m]

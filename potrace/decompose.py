@@ -2,7 +2,7 @@ from typing import Optional, Tuple, Union
 
 from PIL import Image
 
-from structures import *
+from .structures import *
 
 POTRACE_TURNPOLICY_BLACK = 0
 POTRACE_TURNPOLICY_WHITE = 1

@@ -10,8 +10,8 @@ import sys
 
 from PIL import Image
 
-from decompose import bm_to_pathlist
-from tracer import process_path
+from .decompose import bm_to_pathlist
+from .tracer import process_path
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -56,6 +56,9 @@ parser.add_argument(
     "-n", "--longcurve", action="store_true", help="turn off curve optimization"
 )
 parser.add_argument(
+    "-D", "--decompose_only", action="store_true", help="only decompose the image"
+)
+parser.add_argument(
     "-O", "--opttolerance", type=float, help="curve optimization tolerance", default=0.2
 )
 parser.add_argument(
@@ -92,7 +95,7 @@ def run():
         image = image.convert("1")
 
         plist = bm_to_pathlist(image, turdsize=args.turdsize, turnpolicy=turnpolicy)
-        traced = process_path(
+        process_path(
             plist,
             alphamax=args.alphamax,
             opticurve=not args.longcurve,
@@ -105,30 +108,31 @@ def run():
                     % (image.width, image.height)
                 )
                 parts = []
+
                 for path in plist:
-                    parts.append("M")
-                    for point in path.pt:
-                        parts.append(" %f,%f" % (point.x, point.y))
-                    parts.append("z")
-                # for path in traced:
-                #     parts.append("M%d,%d" % (path._x0, path._y0))
-                #     for segment in path._fcurve.segments:
-                #         # if segment.tag == POTRACE_CORNER:
-                #         v = segment.c[1]
-                #         if v.x == 0:
-                #             continue
-                #         parts.append("L%f,%f" % (v.x, v.y))
-                #         b = segment.c[2]
-                #         parts.append("L%f,%f" % (b.x, b.y))
-                #         # else:
-                #         #
-                #         #     u = segment.c[0]
-                #         #     w = segment.c[1]
-                #         #     b = segment.c[2]
-                #         #     if u.x == 0:
-                #         #         continue
-                #         #     parts.append("Q%f,%f %f,%f" % (w.x, w.y, b.x, b.y))
-                #     parts.append('z')
+                    if args.decompose_only:
+                        parts.append("M")
+                        for point in path.pt:
+                            parts.append(" %f,%f" % (point.x, point.y))
+                    else:
+                        parts.append("M%d,%d" % (path._x0, path._y0))
+                        for segment in path._fcurve.segments:
+                            # if segment.tag == POTRACE_CORNER:
+                            v = segment.c[1]
+                            if v.x == 0:
+                                continue
+                            parts.append("L%f,%f" % (v.x, v.y))
+                            b = segment.c[2]
+                            parts.append("L%f,%f" % (b.x, b.y))
+                            # else:
+                            #
+                            #     u = segment.c[0]
+                            #     w = segment.c[1]
+                            #     b = segment.c[2]
+                            #     if u.x == 0:
+                            #         continue
+                            #     parts.append("Q%f,%f %f,%f" % (w.x, w.y, b.x, b.y))
+                    parts.append('z')
                 fp.write('<path stroke="black" fill="none" d="%s"/>' % "".join(parts))
                 fp.write("</svg>")
     else:
