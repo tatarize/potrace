@@ -1564,12 +1564,11 @@ def run():
     args = parser.parse_args(argv)
     args.turnpolicy = choices.index(args.turnpolicy)
     if args.version:
-        print("Pure Python Potrace 0.0.1")
+        print("Python Potrace 0.0.1")
         return
     if args.filename:
         image = Image.open(args.filename)
-        if image.mode != '1':
-            image = image.convert('1')
+        if image.mode != 'L':
             image = image.convert('L')
         image = image.point(lambda e: int(e > 127) * 255)
         image = image.convert('1')
