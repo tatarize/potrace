@@ -120,7 +120,7 @@ def run():
                         #     point = path.pt[p]
                         #     parts.append(" %f,%f" % (point.x, point.y))
                         parts.append("M%d,%d" % (path._x0, path._y0))
-                        for segment in path._curve.segments:
+                        for segment in path._fcurve.segments:
                             if segment.tag == POTRACE_CORNER:
                                 v = segment.c[1]
                                 parts.append("L%f,%f" % (v.x, v.y))
