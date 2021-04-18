@@ -621,7 +621,7 @@ def _adjust_vertices(pp: Path) -> int:
     ]  # quadform_t/* q[m] */
     v = [0.0, 0.0, 0.0]
     s = Point(0, 0)
-    pp.init_curve(m)
+    pp._curve = Curve(m)
 
     # /* calculate "optimal" point-slope representation for each line segment */
     for i in range(m):
@@ -979,13 +979,13 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
     on failure.
     """
     m = pp._curve.n
-    pt = [None] * (m + 1)  # /* pt[m+1] */
-    pen = [None] * (m + 1)  # /* pen[m+1] */
-    len = [None] * (m + 1)  # /* len[m+1] */
+    pt = [0] * (m + 1)  # /* pt[m+1] */
+    pen = [0.0] * (m + 1)  # /* pen[m+1] */
+    len = [0] * (m + 1)  # /* len[m+1] */
     opt = [opti_t() for i in range(m+1)]  # /* opt[m+1] */
 
-    convc = [None] * m  # /* conv[m]: pre-computed convexities */
-    areac = [None] * (m + 1)  # /* cumarea[m+1]: cache for fast area computation */
+    convc = [0.0] * m  # /* conv[m]: pre-computed convexities */
+    areac = [0.0] * (m + 1)  # /* cumarea[m+1]: cache for fast area computation */
 
     # /* pre-calculate convexity: +1 = right turn, -1 = left turn, 0 = corner */
     for i in range(m):
@@ -1041,6 +1041,7 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
                 len[j] = len[i] + 1
                 opt[j] = o
     om = len[m]
+    pp._ocurve = Curve(om)
     s = [None] * om
     t = [None] * om
 

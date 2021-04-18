@@ -3,6 +3,9 @@ class Point:
         self.x = x
         self.y = y
 
+    def __repr__(self):
+        return "Point(%f, %f)" % (self.x, self.y)
+
 
 class Segment:
     def __init__(self):
@@ -65,6 +68,4 @@ class Path:
         return len(self.pt)
 
     def init_curve(self, m):
-        self._curve = Curve(m)
-        self._ocurve = Curve(m)
-        self._fcurve = Curve(m)
+        pass
