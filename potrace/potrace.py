@@ -40,20 +40,38 @@ def sign(x):
         return 0
 
 
-# typedef dpoint_t dpoint3_t[3];
+class Point:
+    def __init__(self, x: float = 0, y:  float= 0):
+        self.x = x
+        self.y = y
 
 
-class privcurve_t:
-    def __init__(self, n):
-        self.tag = [0] * n  # /* tag[n]: POTRACE_CORNER or POTRACE_CURVETO
-        self.c = [[0.0, 0.0, 0.0]] * n  # /* c[n][i]: control points.
-        # c[n][0] is unused for tag[n]=POTRACE_CORNER */
+class Segment:
+    def __init__(self):
+        self.tag = 0
+        self.c = [Point(), Point(), Point()]
+        self.vertex = Point()
+        self.alpha = 0.0
+        self.alpha0 = 0.0
+        self.beta = 0.0
+
+class Curve:
+    def __init__(self, m):
+        self.segments = [Segment() for i in range(m)]
+        self.alphacurve = False
 
     def __len__(self):
-        return len(self.tag)
+        return len(self.segments)
+
+    @property
+    def n(self):
+        return len(self)
+
+    def __getitem__(self, item):
+        return self.segments[item]
 
 
-class sums_t:
+class Sums:
     def __init__(self):
         self.x = 0
         self.y = 0
@@ -62,47 +80,50 @@ class sums_t:
         self.y2 = 0
 
 
-class privpath_t:
-    def __init__(self):
-        self.pt = []  # /* pt[len]: path as extracted from bitmap */
-        self.lon = []  # /* lon[len]: (i,lon[i]) = longest straight line from i */
-        self.x0 = 0  # /* origin for sums */
-        self.y0 = 0  # /* origin for sums */
-        self.sums = []  # / *sums[len + 1]: cache for fast summing * /
-        self.m = 0  # /* length of optimal polygon */
-        self.po = []  # /* po[m]: optimal polygon */
-        self.curve = []  # /* curve[m]: array of curve elements */
-        self.ocurve = []  # /* ocurve[om]: array of curve elements */
-        self.fcurve = (
-            []
-        )  # /* final curve: this points to either curve or ocurve. Do not free this separately. */
+class Path:
+    def __init__(self, pt, area, sign):
+        self.pt = pt  # /* pt[len]: path as extracted from bitmap */
+
+        self.area = area
+        self.sign = sign
+        self.next = None
+        self.childlist = []
+        self.sibling = []
+
+        self._lon = []  # /* lon[len]: (i,lon[i]) = longest straight line from i */
+
+        self._x0 = 0  # /* origin for sums */
+        self._y0 = 0  # /* origin for sums */
+        self._sums = []  # / *sums[len + 1]: cache for fast summing * /
+
+        self._m = 0  # /* length of optimal polygon */
+        self._po = []  # /* po[m]: optimal polygon */
+        self._curve = []  # /* curve[m]: array of curve elements */
+        self._ocurve = []  # /* ocurve[om]: array of curve elements */
+        self._fcurve = []  # /* final curve: this points to either curve or ocurve.*/
+
+    def __len__(self):
+        return len(self.pt)
+
+    def init_curve(self, m):
+        self._curve = Curve(m)
+        self._ocurve = Curve(m)
+        self._fcurve = Curve(m)
 
 
-class dpoint_t:
-    def __init__(self, x: float, y: float):
-        self.x = x
-        self.y = y
+def interval(t: float, a: Point, b: Point):
+    return Point(a.x + t * (b.x - a.x), a.y + t * (b.y - a.y))
 
 
-class point_t:
-    def __init__(self, x: int, y: int):
-        self.x = x
-        self.y = y
-
-
-def interval(t: float, a: dpoint_t, b: dpoint_t):
-    return dpoint_t(a.x + t * (b.x - a.x), a.y + t * (b.y - a.y))
-
-
-def dorth_infty(p0: dpoint_t, p2: dpoint_t):
+def dorth_infty(p0: Point, p2: Point):
     """
     return a direction that is 90 degrees counterclockwise from p2-p0,
     but then restricted to one of the major wind directions (n, nw, w, etc)
     """
-    return dpoint_t(sign(p2.x - p0.x), -sign(p2.y - p0.y))
+    return Point(sign(p2.x - p0.x), -sign(p2.y - p0.y))
 
 
-def dpara(p0: dpoint_t, p1: dpoint_t, p2: dpoint_t) -> float:
+def dpara(p0: Point, p1: Point, p2: Point) -> float:
     """
     /* return (p1-p0)x(p2-p0), the area of the parallelogram */
     """
@@ -113,7 +134,7 @@ def dpara(p0: dpoint_t, p1: dpoint_t, p2: dpoint_t) -> float:
     return x1 * y2 - x2 * y1
 
 
-def ddenom(p0: dpoint_t, p2: dpoint_t) -> float:
+def ddenom(p0: Point, p2: Point) -> float:
     """
     ddenom/dpara have the property that the square of radius 1 centered
     at p1 intersects the line p0p2 iff |dpara(p0,p1,p2)| <= ddenom(p0,p2)
@@ -127,12 +148,12 @@ def cyclic(a: int, b: int, c: int) -> int:
     /* return 1 if a <= b < c < a, in a cyclic sense (mod n) */
     """
     if a <= c:
-        return a <= b and b < c
+        return a <= b < c
     else:
         return a <= b or b < c
 
 
-def pointslope(pp: privpath_t, i: int, j: int, ctr: dpoint_t, dir: dpoint_t) -> None:
+def pointslope(pp: Path, i: int, j: int, ctr: Point, dir: Point) -> None:
     """
     determine the center and slope of the line i..j. Assume i<j. Needs
     "sum" components of p to be set.
@@ -141,7 +162,7 @@ def pointslope(pp: privpath_t, i: int, j: int, ctr: dpoint_t, dir: dpoint_t) -> 
     # /* assume i<j */
 
     n = len(pp)
-    sums = pp.sums()
+    sums = pp._sums
 
     r = 0  # /* rotations from i to j */
 
@@ -215,7 +236,7 @@ class quadform_t:
         return self.values[item]
 
 
-def quadform(Q: quadform_t, w: dpoint_t) -> float:
+def quadform(Q: quadform_t, w: Point) -> float:
     """
     /* Apply quadratic form Q to vector w = (w.x,w.y) */
     """
@@ -233,12 +254,12 @@ def quadform(Q: quadform_t, w: dpoint_t) -> float:
     return sum
 
 
-def xprod(p1: point_t, p2: point_t) -> int:
+def xprod(p1: Point, p2: Point) -> float:
     """/* calculate p1 x p2 */"""
     return p1.x * p2.y - p1.y * p2.x
 
 
-def cprod(p0: dpoint_t, p1: dpoint_t, p2: dpoint_t, p3: dpoint_t) -> float:
+def cprod(p0: Point, p1: Point, p2: Point, p3: Point) -> float:
     """/* calculate (p1-p0)x(p3-p2) */"""
     x1 = p1.x - p0.x
     y1 = p1.y - p0.y
@@ -247,7 +268,7 @@ def cprod(p0: dpoint_t, p1: dpoint_t, p2: dpoint_t, p3: dpoint_t) -> float:
     return x1 * y2 - x2 * y1
 
 
-def iprod(p0: dpoint_t, p1: dpoint_t, p2: dpoint_t) -> float:
+def iprod(p0: Point, p1: Point, p2: Point) -> float:
     """/* calculate (p1-p0)*(p2-p0) */"""
     x1 = p1.x - p0.x
     y1 = p1.y - p0.y
@@ -256,7 +277,7 @@ def iprod(p0: dpoint_t, p1: dpoint_t, p2: dpoint_t) -> float:
     return x1 * x2 + y1 * y2
 
 
-def iprod1(p0: dpoint_t, p1: dpoint_t, p2: dpoint_t, p3: dpoint_t) -> float:
+def iprod1(p0: Point, p1: Point, p2: Point, p3: Point) -> float:
     """/* calculate (p1-p0)*(p3-p2) */"""
     x1 = p1.x - p0.x
     y1 = p1.y - p0.y
@@ -269,14 +290,14 @@ def sq(x: float) -> float:
     return x * x
 
 
-def ddist(p: dpoint_t, q: dpoint_t) -> float:
+def ddist(p: Point, q: Point) -> float:
     """/* calculate distance between two points */"""
     return math.sqrt(sq(p.x - q.x) + sq(p.y - q.y))
 
 
 def bezier(
-        t: float, p0: dpoint_t, p1: dpoint_t, p2: dpoint_t, p3: dpoint_t
-) -> dpoint_t:
+        t: float, p0: Point, p1: Point, p2: Point, p3: Point
+) -> Point:
     """
     /* calculate point of a bezier curve */
     """
@@ -287,7 +308,7 @@ def bezier(
     following to 16 multiplications, using common subexpression
     elimination.
     """
-    return dpoint_t(
+    return Point(
         s * s * s * p0.x
         + 3 * (s * s * t) * p1.x
         + 3 * (t * t * s) * p2.x
@@ -300,7 +321,7 @@ def bezier(
 
 
 def tangent(
-        p0: dpoint_t, p1: dpoint_t, p2: dpoint_t, p3: dpoint_t, q0: dpoint_t, q1: dpoint_t
+        p0: Point, p1: Point, p2: Point, p3: Point, q0: Point, q1: Point
 ) -> float:
     """
     /* calculate the point t in [0..1] on the (convex) bezier curve
@@ -336,28 +357,28 @@ def tangent(
         return -1.0
 
 
-def calc_sums(pp: list) -> int:
+def _calc_sums(path: Path) -> int:
     """/* ---------------------------------------------------------------------- */
     /* Preparation: fill in the sum* fields of a path (used for later
     rapid summing). Return 0 on success, 1 with errno set on
     failure. */"""
-    n = len(pp)
-    pp.sums = [object()] * (len(pp) + 1)
+    n = len(path)
+    path._sums = [Sums() for i in range(len(path) + 1)]
 
     #/* origin */
-    pp.x0 = pp[0][0]
-    pp.y0 = pp[0][1]
+    path._x0 = path.pt[0].x
+    path._y0 = path.pt[0].y
 
     # /* preparatory computation for later fast summing */
-    pp.sums[0].x2 = pp.sums[0].xy = pp.sums[0].y2 = pp.sums[0].x = pp.sums[0].y = 0
+    path._sums[0].x2 = path._sums[0].xy = path._sums[0].y2 = path._sums[0].x = path._sums[0].y = 0
     for i in range(n):
-        x = pp.pt[i].x - pp.x0
-        y = pp.pt[i].y - pp.y0
-        pp.sums[i+1].x = pp.sums[i].x + x
-        pp.sums[i+1].y = pp.sums[i].y + y
-        pp.sums[i+1].x2 = pp.sums[i].x2 + float(x*x)
-        pp.sums[i+1].xy = pp.sums[i].xy + float(x*y)
-        pp.sums[i+1].y2 = pp.sums[i].y2 + float(y*y)
+        x = path.pt[i].x - path._x0
+        y = path.pt[i].y - path._y0
+        path._sums[i + 1].x = path._sums[i].x + x
+        path._sums[i + 1].y = path._sums[i].y + y
+        path._sums[i + 1].x2 = path._sums[i].x2 + float(x * x)
+        path._sums[i + 1].xy = path._sums[i].xy + float(x * y)
+        path._sums[i + 1].y2 = path._sums[i].y2 + float(y * y)
     return 0
 
 """
@@ -393,18 +414,18 @@ def calc_sums(pp: list) -> int:
 """
 
 
-def calc_lon(pp: privpath_t) -> int:
+def _calc_lon(pp: Path) -> int:
     """/* returns 0 on success, 1 on error with errno set */"""
     pt = pp.pt
     n = len(pp)
 
     ct = [0, 0, 0, 0]
-    constraint = [point_t(0, 0), point_t(0, 0)]
-    cur = point_t(0, 0)
-    off = point_t(0, 0)
+    constraint = [Point(0, 0), Point(0, 0)]
+    cur = Point(0, 0)
+    off = Point(0, 0)
     pivk = [None] * n  # /* pivk[n] */
     nc = [None] * n  # NULL;        /* nc[n]: next corner */
-    dk = point_t(0, 0)  # /* direction of k-k1 */
+    dk = Point(0, 0)  # /* direction of k-k1 */
 
     """/* initialize the nc data structure. Point from each point to the
          furthest future point to which it is connected by a vertical or
@@ -420,17 +441,18 @@ def calc_lon(pp: privpath_t) -> int:
             k = i + 1  # /* necessarily i<n-1 in this case */
         nc[i] = k
 
-    pp.lon = [pp.lon] * n
+    pp._lon = [pp._lon] * n
 
     # determine pivot points: for each i, let pivk[i] be the furthest k
     # such that all j with i<j<k lie on a line connecting i,k.
 
+    break_inner_loop_and_continue = False
     for i in range(n - 1, -1, -1):
         ct[0] = ct[1] = ct[2] = ct[3] = 0
 
         # keep track of "directions" that have occurred
-        dir = (3 + 3 * (pt[i + 1 % n].x - pt[i].x) + (pt[i + 1 % n].y - pt[i].y)) / 2
-        ct[dir] += 1
+        dir = (3 + 3 * (pt[(i + 1) % n].x - pt[i].x) + (pt[(i + 1) % n].y - pt[i].y)) / 2
+        ct[int(dir)] += 1
 
         constraint[0].x = 0
         constraint[0].y = 0
@@ -442,12 +464,13 @@ def calc_lon(pp: privpath_t) -> int:
         k1 = i
         while True:
             dir = (3 + 3 * sign(pt[k].x - pt[k1].x) + sign(pt[k].y - pt[k1].y)) / 2
-            ct[dir] += 1
+            ct[int(dir)] += 1
 
             # if all four "directions" have occurred, cut this path
             if ct[0] and ct[1] and ct[2] and ct[3]:
                 pivk[i] = k1
-                # goto foundk; # TODO: GOTO!
+                break_inner_loop_and_continue = True
+                break  # goto foundk;
 
             cur.x = pt[k].x - pt[i].x
             cur.y = pt[k].y - pt[i].y
@@ -480,6 +503,10 @@ def calc_lon(pp: privpath_t) -> int:
                     break
             else:
                 break
+        if break_inner_loop_and_continue:
+            # This previously was a goto to the end of the for i statement.
+            break_inner_loop_and_continue = False
+            continue
         # constraint_viol:
         """/* k1 was the last "corner" satisfying the current constraint, and
              k is the first one violating it. We now need to find the last
@@ -502,23 +529,23 @@ def calc_lon(pp: privpath_t) -> int:
             j = math.floor(a / -b)
         if d > 0:
             j = min(j, math.floor(-c / d))
-        pivk[i] = k1 + j % n
-    # foundk:
-    # /* for i */
+        pivk[i] = (k1 + j) % n
+        # foundk:
+        # /* for i */
 
     """/* clean up: for each i, let lon[i] be the largest k such that for
          all i' with i<=i'<k, i'<k<=pivk[i']. */"""
 
     j = pivk[n - 1]
-    pp.lon[n - 1] = j
+    pp._lon[n - 1] = j
     for i in range(n - 2, -1, -1):
         if cyclic(i + 1, pivk[i], j):
             j = pivk[i]
-        pp.lon[i] = j
+        pp._lon[i] = j
 
     i = n - 1
-    while cyclic(i + 1 % n, j, pp.lon[i]):
-        pp.lon[i] = j
+    while cyclic((i + 1) % n, j, pp._lon[i]):
+        pp._lon[i] = j
         i -= 1
     return 0
 
@@ -529,14 +556,14 @@ def calc_lon(pp: privpath_t) -> int:
 """
 
 
-def penalty3(pp: privpath_t, i: int, j: int) -> float:
+def penalty3(pp: Path, i: int, j: int) -> float:
     """
     Auxiliary function: calculate the penalty of an edge from i to j in
      the given path. This needs the "lon" and "sum*" data.
     """
     n = len(pp)
     pt = pp.pt
-    sums = pp.sums()
+    sums = pp._sums
 
     # /* assume 0<=i<j<=n    */
 
@@ -575,25 +602,25 @@ def penalty3(pp: privpath_t, i: int, j: int) -> float:
     return math.sqrt(s)
 
 
-def bestpolygon(pp: privpath_t) -> int:
+def _bestpolygon(pp: Path) -> int:
     """
     /* find the optimal polygon. Fill in the m and po components. Return 1
          on failure with errno set, else 0. Non-cyclic version: assumes i=0
          is in the polygon. Fixme: implement cyclic version. */
     """
     n = len(pp)
-    pen = [None] * n + 1  # /* pen[n+1]: penalty vector */
-    prev = [None] * n  # /* prev[n+1]: best path pointer vector */
+    pen = [None] * (n + 1)  # /* pen[n+1]: penalty vector */
+    prev = [None] * (n + 1)  # /* prev[n+1]: best path pointer vector */
     clip0 = [None] * n  # /* clip0[n]: longest segment pointer, non-cyclic */
-    clip1 = [None] * n + 1  # /* clip1[n+1]: backwards segment pointer, non-cyclic */
-    seg0 = [None] * n + 1  # /* seg0[m+1]: forward segment bounds, m<=n */
-    seg1 = [None] * n + 1  # /* seg1[m+1]: backward segment bounds, m<=n */
+    clip1 = [None] * (n + 1)  # /* clip1[n+1]: backwards segment pointer, non-cyclic */
+    seg0 = [None] * (n + 1)  # /* seg0[m+1]: forward segment bounds, m<=n */
+    seg1 = [None] * (n + 1)  # /* seg1[m+1]: backward segment bounds, m<=n */
 
     # /* calculate clipped paths */
     for i in range(n):
-        c = pp.lon[i - 1 % n] - 1 % n
+        c = (pp._lon[(i - 1) % n] - 1) % n
         if c == i:
-            c = i + 1 % n
+            c = (i + 1) % n
         if c < i:
             clip0[i] = n
         else:
@@ -609,9 +636,11 @@ def bestpolygon(pp: privpath_t) -> int:
 
     # calculate seg0[j] = longest path from 0 with j segments */
     i = 0
-    for j in range(n):
+    j = 0
+    while i < n:
         seg0[j] = i
         i = clip0[i]
+        j += 1
     seg0[j] = n
     m = j
 
@@ -638,15 +667,15 @@ def bestpolygon(pp: privpath_t) -> int:
                     best = thispen
             pen[i] = best
 
-    pp.m = m
-    pp.po = [None] * m
+    pp._m = m
+    pp._po = [None] * m
 
     # /* read off shortest path */
     i = n
     j = m - 1
     while i > 0:
         i = prev[i]
-        pp.po[j] = i
+        pp._po[j] = i
         j -= 1
     return 0
 
@@ -658,31 +687,30 @@ def bestpolygon(pp: privpath_t) -> int:
 """
 
 
-def adjust_vertices(pp: privpath_t) -> int:
+def _adjust_vertices(pp: Path) -> int:
     """
     /* Adjust vertices of optimal polygon: calculate the intersection of
      the two "optimal" line segments, then move it into the unit square
      if it lies outside. Return 1 with errno set on error; 0 on
      success. */
     """
-    m = pp.m
-    po = pp.po
+    m = pp._m
+    po = pp._po
     n = len(pp)
     pt = pp.pt  # point_t
-    x0 = pp.x0
-    y0 = pp.y0
+    x0 = pp._x0
+    y0 = pp._y0
 
-    ctr = [(None, None)] * m  # /* ctr[m] */
-    dir = [(None, None)] * m  # /* dir[m] */
-    q = [[[0] * 3] * 3] * m  # quadform_t/* q[m] */
+    ctr = [Point() for i in range(m)]  # /* ctr[m] */
+    dir = [Point() for i in range(m)]  # /* dir[m] */
+    q = [[[0.0 for a in range(3)] for b in range(3)] for c in range(m)]   # quadform_t/* q[m] */
     v = [0.0, 0.0, 0.0]
-    s = dpoint_t(0, 0)
-
-    r = []
+    s = Point(0, 0)
+    pp.init_curve(m)
 
     # /* calculate "optimal" point-slope representation for each line segment */
     for i in range(m):
-        j = po[i + 1 % m]
+        j = po[(i + 1) % m]
         j = ((j - po[i]) % n) + po[i]
         pointslope(pp, po[i], j, ctr[i], dir[i])
 
@@ -707,8 +735,8 @@ def adjust_vertices(pp: privpath_t) -> int:
          Instead of using the actual intersection, we find the point
          within a given unit square which minimizes the square distance to
          the two lines. */"""
+    Q = [[0.0 for a in range(3)] for b in range(3)]
     for i in range(m):
-        Q = [[0.0] * 3] * 3
         # double min, cand; #/* minimum and candidate for minimum of quad. form */
         # double xmin, ymin;	#/* coordinates of minimum */
 
@@ -718,7 +746,7 @@ def adjust_vertices(pp: privpath_t) -> int:
 
         # /* intersect segments i-1 and i */
 
-        j = i - 1 % m
+        j = (i - 1) % m
 
         # /* add quadratic forms */
         for l in range(3):
@@ -732,7 +760,7 @@ def adjust_vertices(pp: privpath_t) -> int:
             det = Q[0][0] * Q[1][1] - Q[0][1] * Q[1][0]
             w = None
             if det != 0.0:
-                w = point_t(
+                w = Point(
                     (-Q[0][2] * Q[1][1] + Q[1][2] * Q[0][1]) / det,
                     (Q[0][2] * Q[1][0] - Q[1][2] * Q[0][0]) / det,
                 )
@@ -757,8 +785,8 @@ def adjust_vertices(pp: privpath_t) -> int:
         dx = math.fabs(w.x - s.x)
         dy = math.fabs(w.y - s.y)
         if dx <= 0.5 and dy <= 0.5:
-            pp.curve.vertex[i].x = w.x + x0
-            pp.curve.vertex[i].y = w.y + y0
+            pp._curve[i].vertex.x = w.x + x0
+            pp._curve[i].vertex.y = w.y + y0
             continue
 
         # /* the minimum was not in the unit square; now minimize quadratic
@@ -779,7 +807,7 @@ def adjust_vertices(pp: privpath_t) -> int:
                     ymin = w.y
         if Q[1][1] != 0.0:
             for z in range(2):  # /* value of the x-coordinate */
-                w = point_t(s.x - 0.5 + z, -(Q[1][0] * w.x + Q[1][2]) / Q[1][1])
+                w = Point(s.x - 0.5 + z, -(Q[1][0] * w.x + Q[1][2]) / Q[1][1])
                 dy = math.fabs(w.y - s.y)
                 cand = quadform(Q, w)
                 if dy <= 0.5 and cand < min:
@@ -789,14 +817,14 @@ def adjust_vertices(pp: privpath_t) -> int:
         # /* check four corners */
         for l in range(2):
             for k in range(2):
-                w = point_t(s.x - 0.5 + l, s.y - 0.5 + k)
+                w = Point(s.x - 0.5 + l, s.y - 0.5 + k)
                 cand = quadform(Q, w)
                 if cand < min:
                     min = cand
                     xmin = w.x
                     ymin = w.y
-        pp.curve.vertex[i].x = xmin + x0
-        pp.curve.vertex[i].y = ymin + y0
+        pp._curve[i].vertex.x = xmin + x0
+        pp._curve[i].vertex.y = ymin + y0
     return 0
 
 
@@ -806,15 +834,15 @@ def adjust_vertices(pp: privpath_t) -> int:
 """
 
 
-def reverse(curve: privcurve_t) -> None:
+def reverse(curve: Curve) -> None:
     """/* reverse orientation of a path */"""
     m = curve.n
     i = 0
     j = m - 1
     while i < j:
-        tmp = privcurve_t(curve.vertex[i])
-        curve.vertex[i] = curve.vertex[j]
-        curve.vertex[j] = tmp
+        tmp = curve[i].vertex
+        curve[i].vertex = curve[j].vertex
+        curve[j].vertex = tmp
         i += 1
         j -= 1
 
@@ -822,43 +850,43 @@ def reverse(curve: privcurve_t) -> None:
 # /* Always succeeds */
 
 
-def smooth(curve: privcurve_t, alphamax: float) -> None:
+def _smooth(curve: Curve, alphamax: float) -> None:
     m = curve.n
 
     # /* examine each vertex and find its best fit */
     for i in range(m):
-        j = i + 1 % m
-        k = i + 2 % m
-        p4 = interval(1 / 2.0, curve.vertex[k], curve.vertex[j])
+        j = (i + 1) % m
+        k = (i + 2) % m
+        p4 = interval(1 / 2.0, curve[k].vertex, curve[j].vertex)
 
-        denom = ddenom(curve.vertex[i], curve.vertex[k])
+        denom = ddenom(curve[i].vertex, curve[k].vertex)
         if denom != 0.0:
-            dd = dpara(curve.vertex[i], curve.vertex[j], curve.vertex[k]) / denom
+            dd = dpara(curve[i].vertex, curve[j].vertex, curve[k].vertex) / denom
             dd = math.fabs(dd)
             alpha = (1 - 1.0 / dd) if dd > 1 else 0
             alpha = alpha / 0.75
         else:
             alpha = 4 / 3.0
-        curve.alpha0[j] = alpha  # /* remember "original" value of alpha */
+        curve[j].alpha0 = alpha  # /* remember "original" value of alpha */
 
         if alpha >= alphamax:  # /* pointed corner */
-            curve.tag[j] = POTRACE_CORNER
-            curve.c[j][1] = curve.vertex[j]
-            curve.c[j][2] = p4
+            curve[j].tag = POTRACE_CORNER
+            curve[j].c[1] = curve[j].vertex
+            curve[j].c[2] = p4
         else:
             if alpha < 0.55:
                 alpha = 0.55
             elif alpha > 1:
                 alpha = 1
-            p2 = interval(0.5 + 0.5 * alpha, curve.vertex[i], curve.vertex[j])
-            p3 = interval(0.5 + 0.5 * alpha, curve.vertex[k], curve.vertex[j])
-            curve.tag[j] = POTRACE_CURVETO
-            curve.c[j][0] = p2
-            curve.c[j][1] = p3
-            curve.c[j][2] = p4
-        curve.alpha[j] = alpha  # /* store the "cropped" value of alpha */
-        curve.beta[j] = 0.5
-    curve.alphacurve = 1
+            p2 = interval(0.5 + 0.5 * alpha, curve[i].vertex, curve[j].vertex)
+            p3 = interval(0.5 + 0.5 * alpha, curve[k].vertex, curve[j].vertex)
+            curve[j].tag = POTRACE_CURVETO
+            curve[j].c[0] = p2
+            curve[j].c[1] = p3
+            curve[j].c[2] = p4
+        curve[j].alpha = alpha  # /* store the "cropped" value of alpha */
+        curve[j].beta = 0.5
+    curve.alphacurve = True
 
 
 """
@@ -870,14 +898,14 @@ def smooth(curve: privcurve_t, alphamax: float) -> None:
 class opti_t:
     def __init__(self):
         self.pen = 0  # /* penalty */
-        self.c = [dpoint_t(0, 0)] * 2  # /* curve parameters */
+        self.c = [Point(0, 0), Point(0,0)]  # /* curve parameters */
         self.t = 0  # /* curve parameters */
         self.s = 0  # /* curve parameters */
         self.alpha = 0  # /* curve parameter */
 
 
 def opti_penalty(
-        pp: privpath_t,
+        pp: Path,
         i: int,
         j: int,
         res: opti_t,
@@ -891,7 +919,7 @@ def opti_penalty(
      possible. Return 1 if impossible. */
     """
 
-    m = pp.curve.n
+    m = pp._curve.n
 
     # /* check convexity, corner-freeness, and maximum bend < 179 degrees */
 
@@ -899,25 +927,25 @@ def opti_penalty(
         return 1
 
     k = i
-    i1 = i + 1 % m
-    k1 = k + 1 % m
+    i1 = (i + 1) % m
+    k1 = (k + 1) % m
     conv = convc[k1]
     if conv == 0:
         return 1
-    d = ddist(pp.curve.vertex[i], pp.curve.vertex[i1])
+    d = ddist(pp._curve[i].vertex, pp._curve[i1].vertex)
     k = k1
     while k != j:
-        k1 = k + 1 % m
-        k2 = k + 2 % m
+        k1 = (k + 1) % m
+        k2 = (k + 2) % m
         if convc[k1] != conv:
             return 1
         if (
                 sign(
                     cprod(
-                        pp.curve.vertex[i],
-                        pp.curve.vertex[i1],
-                        pp.curve.vertex[k1],
-                        pp.curve.vertex[k2],
+                        pp._curve[i].vertex,
+                        pp._curve[i1].vertex,
+                        pp._curve[k1].vertex,
+                        pp._curve[k2].vertex,
                     )
                 )
                 != conv
@@ -925,25 +953,25 @@ def opti_penalty(
             return 1
         if (
                 iprod1(
-                    pp.curve.vertex[i],
-                    pp.curve.vertex[i1],
-                    pp.curve.vertex[k1],
-                    pp.curve.vertex[k2],
+                    pp._curve[i].vertex,
+                    pp._curve[i1].vertex,
+                    pp._curve[k1].vertex,
+                    pp._curve[k2].vertex,
                 )
-                < d * ddist(pp.curve.vertex[k1], pp.curve.vertex[k2]) * COS179
+                < d * ddist(pp._curve[k1].vertex, pp._curve[k2].vertex) * COS179
         ):
             return 1
         k = k1
 
     # /* the curve we're working in: */
-    p0 = pp.curve.c[i % m][2]
-    p1 = pp.curve.vertex[i + 1 % m]
-    p2 = pp.curve.vertex[j % m]
-    p3 = pp.curve.c[j % m][2]
+    p0 = pp._curve[i % m].c[2]
+    p1 = pp._curve[(i + 1) % m].vertex
+    p2 = pp._curve[j % m].vertex
+    p3 = pp._curve[j % m].c[2]
 
     # /* determine its area */
     area = areac[j] - areac[i]
-    area -= dpara(pp.curve.vertex[0], pp.curve.c[i][2], pp.curve.c[j][2]) / 2
+    area -= dpara(pp._curve[0].vertex, pp._curve[i].c[2], pp._curve[j].c[2]) / 2
     if i >= j:
         area += areac[m]
 
@@ -983,22 +1011,22 @@ def opti_penalty(
 
     # /* calculate penalty */
     # /* check tangency with edges */
-    k = i + 1 % m
+    k = (i + 1) % m
     while k != j:
-        k1 = k + 1 % m
-        t = tangent(p0, p1, p2, p3, pp.curve.vertex[k], pp.curve.vertex[k1])
+        k1 = (k + 1) % m
+        t = tangent(p0, p1, p2, p3, pp._curve[k].vertex, pp._curve[k1].vertex)
         if t < -0.5:
             return 1
         pt = bezier(t, p0, p1, p2, p3)
-        d = ddist(pp.curve.vertex[k], pp.curve.vertex[k1])
+        d = ddist(pp._curve[k].vertex, pp._curve[k1].vertex)
         if d == 0.0:  # /* this should never happen */
             return 1
-        d1 = dpara(pp.curve.vertex[k], pp.curve.vertex[k1], pt) / d
+        d1 = dpara(pp._curve[k].vertex, pp._curve[k1].vertex, pt) / d
         if math.fabs(d1) > opttolerance:
             return 1
         if (
-                iprod(pp.curve.vertex[k], pp.curve.vertex[k1], pt) < 0
-                or iprod(pp.curve.vertex[k1], pp.curve.vertex[k], pt) < 0
+                iprod(pp._curve[k].vertex, pp._curve[k1].vertex, pt) < 0
+                or iprod(pp._curve[k1].vertex, pp._curve[k].vertex, pt) < 0
         ):
             return 1
         res.pen += sq(d1)
@@ -1007,17 +1035,17 @@ def opti_penalty(
     # /* check corners */
     k = i
     while k != j:
-        k1 = k + 1 % m
-        t = tangent(p0, p1, p2, p3, pp.curve.c[k][2], pp.curve.c[k1][2])
+        k1 = (k + 1) % m
+        t = tangent(p0, p1, p2, p3, pp._curve[k].c[2], pp._curve[k1].c[2])
         if t < -0.5:
             return 1
         pt = bezier(t, p0, p1, p2, p3)
-        d = ddist(pp.curve.c[k][2], pp.curve.c[k1][2])
+        d = ddist(pp._curve[k].c[2], pp._curve[k1].c[2])
         if d == 0.0:  # /* this should never happen */
             return 1
-        d1 = dpara(pp.curve.c[k][2], pp.curve.c[k1][2], pt) / d
-        d2 = dpara(pp.curve.c[k][2], pp.curve.c[k1][2], pp.curve.vertex[k1]) / d
-        d2 *= 0.75 * pp.curve.alpha[k1]
+        d1 = dpara(pp._curve[k].c[2], pp._curve[k1].c[2], pt) / d
+        d2 = dpara(pp._curve[k].c[2], pp._curve[k1].c[2], pp._curve[k1].vertex) / d
+        d2 *= 0.75 * pp._curve[k1].alpha
         if d2 < 0:
             d1 = -d1
             d2 = -d2
@@ -1029,29 +1057,29 @@ def opti_penalty(
     return 0
 
 
-def opticurve(pp: privpath_t, opttolerance: float) -> int:
+def _opticurve(pp: Path, opttolerance: float) -> int:
     """
     optimize the path p, replacing sequences of Bezier segments by a
     single segment when possible. Return 0 on success, 1 with errno set
     on failure.
     """
-    m = pp.curve.n
-    pt = [None] * m + 1  # /* pt[m+1] */
-    pen = [None] * m + 1  # /* pen[m+1] */
-    len = [None] * m + 1  # /* len[m+1] */
-    opt = [None] * m + 1  # /* opt[m+1] */
+    m = pp._curve.n
+    pt = [None] * (m + 1)  # /* pt[m+1] */
+    pen = [None] * (m + 1)  # /* pen[m+1] */
+    len = [None] * (m + 1)  # /* len[m+1] */
+    opt = [None] * (m + 1)  # /* opt[m+1] */
 
     convc = [None] * m  # /* conv[m]: pre-computed convexities */
-    areac = [None] * m + 1  # /* cumarea[m+1]: cache for fast area computation */
+    areac = [None] * (m + 1)  # /* cumarea[m+1]: cache for fast area computation */
 
     # /* pre-calculate convexity: +1 = right turn, -1 = left turn, 0 = corner */
     for i in range(m):
-        if pp.curve.tag[i] == POTRACE_CURVETO:
+        if pp._curve[i].tag == POTRACE_CURVETO:
             convc[i] = sign(
                 dpara(
-                    pp.curve.vertex[i - 1 % m],
-                    pp.curve.vertex[i],
-                    pp.curve.vertex[i + 1 % m],
+                    pp._curve[(i - 1) % m].vertex,
+                    pp._curve[i].vertex,
+                    pp._curve[(i + 1) % m].vertex,
                 )
             )
         else:
@@ -1060,19 +1088,19 @@ def opticurve(pp: privpath_t, opttolerance: float) -> int:
     # /* pre-calculate areas */
     area = 0.0
     areac[0] = 0.0
-    p0 = pp.curve.vertex[0]
+    p0 = pp._curve[0].vertex
     for i in range(m):
-        i1 = i + 1 % m
-        if pp.curve.tag[i1] == POTRACE_CURVETO:
-            alpha = pp.curve.alpha[i1]
+        i1 = (i + 1) % m
+        if pp._curve[i1].tag == POTRACE_CURVETO:
+            alpha = pp._curve[i1].alpha
             area += (
                     0.3
                     * alpha
                     * (4 - alpha)
-                    * dpara(pp.curve.c[i][2], pp.curve.vertex[i1], pp.curve.c[i1][2])
+                    * dpara(pp._curve[i].c[2], pp._curve[i1].vertex, pp._curve[i1].c[2])
                     / 2
             )
-            area += dpara(p0, pp.curve.c[i][2], pp.curve.c[i1][2]) / 2
+            area += dpara(p0, pp._curve[i].c[2], pp._curve[i1].c[2]) / 2
         areac[i + 1] = area
     pt[0] = -1
     pen[0] = 0
@@ -1105,34 +1133,34 @@ def opticurve(pp: privpath_t, opttolerance: float) -> int:
     j = m
     for i in range(om - 1, -1, -1):
         if pt[j] == j - 1:
-            pp.ocurve.tag[i] = pp.curve.tag[j % m]
-            pp.ocurve.c[i][0] = pp.curve.c[j % m][0]
-            pp.ocurve.c[i][1] = pp.curve.c[j % m][1]
-            pp.ocurve.c[i][2] = pp.curve.c[j % m][2]
-            pp.ocurve.vertex[i] = pp.curve.vertex[j % m]
-            pp.ocurve.alpha[i] = pp.curve.alpha[j % m]
-            pp.ocurve.alpha0[i] = pp.curve.alpha0[j % m]
-            pp.ocurve.beta[i] = pp.curve.beta[j % m]
+            pp._ocurve[i].tag = pp._curve[j % m].tag
+            pp._ocurve[i].c[0] = pp._curve[j % m].c[0]
+            pp._ocurve[i].c[1] = pp._curve[j % m].c[1]
+            pp._ocurve[i].c[2] = pp._curve[j % m].c[2]
+            pp._ocurve[i].vertex = pp._curve[j % m].vertex
+            pp._ocurve[i].alpha = pp._curve[j % m].alpha
+            pp._ocurve[i].alpha0 = pp._curve[j % m].alpha0
+            pp._ocurve[i].beta = pp._curve[j % m].beta
             s[i] = t[i] = 1.0
         else:
-            pp.ocurve.tag[i] = POTRACE_CURVETO
-            pp.ocurve.c[i][0] = opt[j].c[0]
-            pp.ocurve.c[i][1] = opt[j].c[1]
-            pp.ocurve.c[i][2] = pp.curve.c[j % m][2]
-            pp.ocurve.vertex[i] = interval(
-                opt[j].s, pp.curve.c[j % m][2], pp.curve.vertex[j % m]
+            pp._ocurve[i].tag = POTRACE_CURVETO
+            pp._ocurve[i].c[0] = opt[j].c[0]
+            pp._ocurve[i].c[1] = opt[j].c[1]
+            pp._ocurve[i].c[2] = pp._curve[j % m].c[2]
+            pp._ocurve[i].vertex = interval(
+                opt[j].s, pp._curve[j % m].c[2], pp._curve[j % m].vertex
             )
-            pp.ocurve.alpha[i] = opt[j].alpha
-            pp.ocurve.alpha0[i] = opt[j].alpha
+            pp._ocurve[i].alpha = opt[j].alpha
+            pp._ocurve[i].alpha0 = opt[j].alpha
             s[i] = opt[j].s
             t[i] = opt[j].t
         j = pt[j]
 
     # /* calculate beta parameters */
     for i in range(om):
-        i1 = i + 1 % om
-        pp.ocurve.beta[i] = s[i] / (s[i] + t[i1])
-    pp.ocurve.alphacurve = 1
+        i1 = (i + 1) % om
+        pp._ocurve[i].beta = s[i] / (s[i] + t[i1])
+    pp._ocurve.alphacurve = True
     return 0
 
 
@@ -1140,7 +1168,7 @@ def opticurve(pp: privpath_t, opttolerance: float) -> int:
 
 
 def process_path(
-        plist,
+        plist: list,
         alphamax=1.0,
         opticurve=True,
         opttolerance=0.2,
@@ -1153,18 +1181,18 @@ def process_path(
 
     # /* call downstream function with each path */
     for p in plist:
-        TRY(calc_sums(p.priv))
-        TRY(calc_lon(p.priv))
-        TRY(bestpolygon(p.priv))
-        TRY(adjust_vertices(p.priv))
+        TRY(_calc_sums(p))
+        TRY(_calc_lon(p))
+        TRY(_bestpolygon(p))
+        TRY(_adjust_vertices(p))
         if p.sign == "-":  # /* reverse orientation of negative paths */
-            reverse(p.priv.curve)
-        smooth(p.priv.curve, alphamax)
+            reverse(p._curve)
+        _smooth(p._curve, alphamax)
         if opticurve:
-            TRY(opticurve(p.priv, opttolerance))
-            p.priv.fcurve = p.priv.ocurve
+            TRY(_opticurve(p, opttolerance))
+            p._fcurve = p._ocurve
         else:
-            p.priv.fcurve = p.priv.curve
+            p._fcurve = p._curve
         # privcurve_to_curve(p.priv.fcurve, p.curve) # TODO: FUNCTION
     return 0
 
@@ -1197,10 +1225,7 @@ def detrand(x: int, y: int) -> int:
 
 
 def BM_GET(bm: Image.Image, x: int, y: int):
-    try:
-        return bm.getpixel((x,y))
-    except IndexError:
-        return 0
+    return bm.getpixel((x,y)) if 0 <= x < bm.width and 0 <= y < bm.height else 0
 
 
 def majority(bm: Image, x: int, y: int) -> int:
@@ -1241,7 +1266,7 @@ def xor_to_ref(bm: Image.Image, x: int, y: int, xa: int) -> None:
             bm.putpixel((i, y), bm.getpixel((i, y)) ^ 0xFF)
 
 
-def xor_path(bm: Image.Image, p: list) -> None:
+def xor_path(bm: Image.Image, p: Path) -> None:
     """
     /* a path is represented as an array of points, which are thought to
        lie on the corners of pixels (not on their centers). The path point
@@ -1255,10 +1280,10 @@ def xor_path(bm: Image.Image, p: list) -> None:
     if len(p) <= 0: #/* a path of length 0 is silly, but legal */
         return
 
-    y1 = p[-1][1]
-    xa = p[0][0]
-    for n in p:
-        x, y = n
+    y1 = p.pt[-1].y
+    xa = p.pt[0].x
+    for n in p.pt:
+        x, y = n.x, n.y
         if y != y1:
             #/* efficiently invert the rectangle [x,xa] x [y,y1] */
             xor_to_ref(bm, x, min(y, y1), xa)
@@ -1269,7 +1294,7 @@ def findpath(bm: Image,
              x0: int,
              y0: int,
              sign: str,
-             turnpolicy: int) -> Tuple:
+             turnpolicy: int) -> Path:
     """
     /* compute a path in the given pixmap, separating black from white.
     Start path at the point (x0,x1), which must be an upper left corner
@@ -1287,7 +1312,7 @@ def findpath(bm: Image,
 
     while True:  # /* while this path */
         # /* add point to path */
-        pt.append([x,y])
+        pt.append(Point(x,y))
 
         # /* move to next point */
         x += dirx
@@ -1325,9 +1350,10 @@ def findpath(bm: Image,
             diry = tmp
 
     # /* allocate new path object */
-    return pt, area
+    return Path(pt, area, sign)
 
-def findnext(bm: Image.Image, xp: int, yp: int) -> Optional[Tuple[Union[int, Any], int]]:
+
+def findnext(bm: Image.Image, xp: int, yp: int) -> Optional[Tuple[Union[int], int]]:
     """
     /* find the next set pixel in a row <= y. Pixels are searched first
        left-to-right, then top-down. In other words, (x,y)<(x',y') if y>y'
@@ -1346,6 +1372,30 @@ def findnext(bm: Image.Image, xp: int, yp: int) -> Optional[Tuple[Union[int, Any
         x0 = 0
     # /* not found */
     return None
+
+
+def setbbox_path(p: Path):
+    """
+    /* Find the bounding box of a given path. Path is assumed to be of
+   non-zero length. */
+   """
+    y0 = float('inf')
+    y1 = 0
+    x0 = float('inf')
+    x1 = 0
+    for k in range(len(p)):
+        x = p.pt[k].x
+        y = p.pt[k].y
+
+        if x < x0:
+            x0 = x
+        if x > x1:
+            x1 = x
+        if y < y0:
+            y0 = y
+        if y > y1:
+            y1 = y
+    return x0, y0, x1, y1
 
 
 def pathlist_to_tree(plist: list, bm: Image.Image) -> None:
@@ -1374,7 +1424,7 @@ def pathlist_to_tree(plist: list, bm: Image.Image) -> None:
     # path_t **hook_in, **hook_out #/* for fast appending to linked list */
     # bbox_t bbox
 
-    # bm_clear(bm, 0)
+    bm = Image.new('1', (bm.width, bm.height))
 
     #/* save original "next" pointers */
 
@@ -1399,12 +1449,12 @@ def pathlist_to_tree(plist: list, bm: Image.Image) -> None:
 
         #/* unlink first path */
         head = cur
-        cur = cur.next;
+        cur = cur.next
         head.next = None
 
         #/* render path */
         xor_path(bm, head)
-        # setbbox_path(bbox, head)
+        x0, y0, x1, y1 = setbbox_path(head)
 
         """
         /* now do insideness test for each element of cur; append it to
@@ -1493,16 +1543,16 @@ def bm_to_pathlist(bm: Image.Image,  turdsize: int = 2, turnpolicy: int = POTRAC
         # /* calculate the sign by looking at the original */
         sign = '+' if BM_GET(bm, x, y) else '-'
         # /* calculate the path */
-        p, area = findpath(bm1, x, y + 1, sign, turnpolicy)
-        if p is None:
+        path = findpath(bm1, x, y + 1, sign, turnpolicy)
+        if path is None:
             raise ValueError
 
         # /* update buffered image */
-        xor_path(bm1, p)
+        xor_path(bm1, path)
 
         # /* if it's a turd, eliminate it, else append it to the list */
-        if area > turdsize:
-            plist.append(p)
+        if path.area > turdsize:
+            plist.append(path)
 
     # pathlist_to_tree(plist, bm1)
     return plist
@@ -1519,9 +1569,8 @@ def trace(bm: Image.Image, turdsize: int = 2, turnpolicy: int = POTRACE_TURNPOLI
    potrace_state_free(). */
     """
     # /* process the image */
-
-    plist =bm_to_pathlist(bm,  turdsize=turdsize, turnpolicy=turnpolicy)
-    # process_path(plist, alphamax=alphamax, opticurve=opticurve, opttolerance=opttolerance)
+    plist = bm_to_pathlist(bm,  turdsize=turdsize, turnpolicy=turnpolicy)
+    process_path(plist, alphamax=alphamax, opticurve=opticurve, opttolerance=opttolerance)
     return plist
 
 
@@ -1580,13 +1629,24 @@ def run():
                 parts = []
 
                 for path in traced:
-                    connect = False
-                    for coords in path:
-                        if connect:
-                            parts.append("L%d,%d" % (coords[0], coords[1]))
-                        else:
-                            parts.append("M%d,%d" % (coords[0], coords[1]))
-                        connect = True
+                    parts.append("M%d,%d" % (path._x0, path._y0))
+                    for segment in path._fcurve.segments:
+                        # if segment.tag == POTRACE_CORNER:
+                        v = segment.c[1]
+                        if v.x == 0:
+                            continue
+                        parts.append("L%f,%f" % (v.x, v.y))
+                        b = segment.c[2]
+                        parts.append("L%f,%f" % (b.x, b.y))
+                        # else:
+                        #
+                        #     u = segment.c[0]
+                        #     w = segment.c[1]
+                        #     b = segment.c[2]
+                        #     if u.x == 0:
+                        #         continue
+                        #     parts.append("Q%f,%f %f,%f" % (w.x, w.y, b.x, b.y))
+                    parts.append('z')
                 fp.write('<path stroke="black" d="%s"/>' % "".join(parts))
                 fp.write('</svg>')
     else:
