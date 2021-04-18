@@ -1,5 +1,3 @@
-
-
 from typing import Optional, Tuple, Union
 
 from PIL import Image
@@ -20,36 +18,286 @@ POTRACE_TURNPOLICY_RANDOM = 6
 detrand_t = (
     # /* non-linear sequence: constant term of inverse in GF(8),
     #   mod x^8+x^4+x^3+x+1 */
-    0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1,
-    0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0,
-    0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1,
-    1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1,
-    0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0,
-    0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0,
-    0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0,
-    0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1,
-    1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0,
-    0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1,
-    1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+    0,
+    1,
+    1,
+    0,
+    1,
+    0,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    1,
+    1,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0,
 )
 
 
 def detrand(x: int, y: int) -> int:
     """deterministically and efficiently hash (x,y) into a pseudo-random bit"""
     # /* 0x04b3e375 and 0x05a8ef93 are chosen to contain every possible 5-bit sequence */
-    z = ((0x04b3e375 * x) ^ y) * 0x05a8ef93
-    z = detrand_t[z & 0xff] ^ detrand_t[(z >> 8) & 0xff] ^ detrand_t[(z >> 16) & 0xff] ^ detrand_t[(z >> 24) & 0xff]
+    z = ((0x04B3E375 * x) ^ y) * 0x05A8EF93
+    z = (
+        detrand_t[z & 0xFF]
+        ^ detrand_t[(z >> 8) & 0xFF]
+        ^ detrand_t[(z >> 16) & 0xFF]
+        ^ detrand_t[(z >> 24) & 0xFF]
+    )
     return z
 
 
 def BM_GET(bm: Image.Image, x: int, y: int):
-    return bm.getpixel((x,y)) if 0 <= x < bm.width and 0 <= y < bm.height else 0
+    return bm.getpixel((x, y)) if 0 <= x < bm.width and 0 <= y < bm.height else 0
 
 
 def majority(bm: Image, x: int, y: int) -> int:
     """
-    /* return the "majority" value of bitmap bm at intersection (x,y). We
-   assume that the bitmap is balanced at "radius" 1.  */
+     /* return the "majority" value of bitmap bm at intersection (x,y). We
+    assume that the bitmap is balanced at "radius" 1.  */
     """
     for i in range(2, 5):  # /* check at "radius" i */
         ct = 0
@@ -73,9 +321,9 @@ def majority(bm: Image, x: int, y: int) -> int:
 
 def xor_to_ref(bm: Image.Image, x: int, y: int, xa: int) -> None:
     """
-    /* efficiently invert bits [x,infty) and [xa,infty) in line y. Here xa
-   must be a multiple of BM_WORDBITS. */
-   """
+     /* efficiently invert bits [x,infty) and [xa,infty) in line y. Here xa
+    must be a multiple of BM_WORDBITS. */
+    """
     if x < xa:
         for i in range(x, xa):
             bm.putpixel((i, y), bm.getpixel((i, y)) ^ 0xFF)
@@ -95,7 +343,7 @@ def xor_path(bm: Image.Image, p: Path) -> None:
     /* xor the given pixmap with the interior of the given path. Note: the
        path must be within the dimensions of the pixmap. */
     """
-    if len(p) <= 0: #/* a path of length 0 is silly, but legal */
+    if len(p) <= 0:  # /* a path of length 0 is silly, but legal */
         return
 
     y1 = p.pt[-1].y
@@ -103,16 +351,12 @@ def xor_path(bm: Image.Image, p: Path) -> None:
     for n in p.pt:
         x, y = n.x, n.y
         if y != y1:
-            #/* efficiently invert the rectangle [x,xa] x [y,y1] */
+            # /* efficiently invert the rectangle [x,xa] x [y,y1] */
             xor_to_ref(bm, x, min(y, y1), xa)
             y1 = y
 
 
-def findpath(bm: Image,
-             x0: int,
-             y0: int,
-             sign: str,
-             turnpolicy: int) -> Path:
+def findpath(bm: Image, x0: int, y0: int, sign: str, turnpolicy: int) -> Path:
     """
     /* compute a path in the given pixmap, separating black from white.
     Start path at the point (x0,x1), which must be an upper left corner
@@ -130,7 +374,7 @@ def findpath(bm: Image,
 
     while True:  # /* while this path */
         # /* add point to path */
-        pt.append(Point(x,y))
+        pt.append(Point(x, y))
 
         # /* move to next point */
         x += dirx
@@ -146,11 +390,16 @@ def findpath(bm: Image,
         d = BM_GET(bm, x + (dirx - diry - 1) / 2, y + (diry + dirx - 1) / 2)
 
         if c and not d:  # /* ambiguous turn */
-            if turnpolicy == POTRACE_TURNPOLICY_RIGHT or (turnpolicy == POTRACE_TURNPOLICY_BLACK and sign == '+') or (
-                    turnpolicy == POTRACE_TURNPOLICY_WHITE and sign == '-') or (
-                    turnpolicy == POTRACE_TURNPOLICY_RANDOM and detrand(x, y)) or (
-                    turnpolicy == POTRACE_TURNPOLICY_MAJORITY and majority(bm, x, y)) or (
-                    turnpolicy == POTRACE_TURNPOLICY_MINORITY and not majority(bm, x, y)):
+            if (
+                turnpolicy == POTRACE_TURNPOLICY_RIGHT
+                or (turnpolicy == POTRACE_TURNPOLICY_BLACK and sign == "+")
+                or (turnpolicy == POTRACE_TURNPOLICY_WHITE and sign == "-")
+                or (turnpolicy == POTRACE_TURNPOLICY_RANDOM and detrand(x, y))
+                or (turnpolicy == POTRACE_TURNPOLICY_MAJORITY and majority(bm, x, y))
+                or (
+                    turnpolicy == POTRACE_TURNPOLICY_MINORITY and not majority(bm, x, y)
+                )
+            ):
                 tmp = dirx  # /* right turn */
                 dirx = diry
                 diry = -tmp
@@ -183,7 +432,7 @@ def findnext(bm: Image.Image, xp: int, yp: int) -> Optional[Tuple[Union[int], in
     for y in range(yp, -1, -1):
         x = x0
         while bm.width > x >= 0:
-            if bm.getpixel((x,y)):
+            if bm.getpixel((x, y)):
                 # /* found */
                 return x, y
             x += 1
@@ -194,12 +443,12 @@ def findnext(bm: Image.Image, xp: int, yp: int) -> Optional[Tuple[Union[int], in
 
 def setbbox_path(p: Path):
     """
-    /* Find the bounding box of a given path. Path is assumed to be of
-   non-zero length. */
-   """
-    y0 = float('inf')
+     /* Find the bounding box of a given path. Path is assumed to be of
+    non-zero length. */
+    """
+    y0 = float("inf")
     y1 = 0
-    x0 = float('inf')
+    x0 = float("inf")
     x1 = 0
     for k in range(len(p)):
         x = p.pt[k].x
@@ -242,9 +491,9 @@ def pathlist_to_tree(plist: list, bm: Image.Image) -> None:
     # path_t **hook_in, **hook_out #/* for fast appending to linked list */
     # bbox_t bbox
 
-    bm = Image.new('1', (bm.width, bm.height))
+    bm = Image.new("1", (bm.width, bm.height))
 
-    #/* save original "next" pointers */
+    # /* save original "next" pointers */
 
     for p in plist:
         p.sibling = p.next
@@ -260,17 +509,17 @@ def pathlist_to_tree(plist: list, bm: Image.Image) -> None:
          pathlists which still need to be transformed. */
     """
     while heap:
-        #/* unlink first sublist */
+        # /* unlink first sublist */
         cur = heap
         heap = heap.childlist
         cur.childlist = None
 
-        #/* unlink first path */
+        # /* unlink first path */
         head = cur
         cur = cur.next
         head.next = None
 
-        #/* render path */
+        # /* render path */
         xor_path(bm, head)
         x0, y0, x1, y1 = setbbox_path(head)
 
@@ -292,7 +541,7 @@ def pathlist_to_tree(plist: list, bm: Image.Image) -> None:
         #     else:
         #         list_insert_beforehook(p, hook_out)
 
-    #/* clear bm */
+    # /* clear bm */
     # clear_bm_with_bbox(bm, &bbox)
     #
     # #/* now schedule head->childlist and head->next for further processing */
@@ -331,14 +580,18 @@ def pathlist_to_tree(plist: list, bm: Image.Image) -> None:
     #         #/* go through its children */
     #     for (p1=p->childlist; p1; p1=p1->sibling):
     #         #/* append to linked list */
-	#         list_insert_beforehook(p1, plist_hook);
-    #         #/* append its childlist to heap, if non-empty */
-	#     if (p1.childlist):
-    #         list_append(path_t, heap1, p1->childlist)
-    #     heap = heap1
 
 
-def bm_to_pathlist(bm: Image.Image,  turdsize: int = 2, turnpolicy: int = POTRACE_TURNPOLICY_MINORITY) -> list:
+#         list_insert_beforehook(p1, plist_hook);
+#         #/* append its childlist to heap, if non-empty */
+#     if (p1.childlist):
+#         list_append(path_t, heap1, p1->childlist)
+#     heap = heap1
+
+
+def bm_to_pathlist(
+    bm: Image.Image, turdsize: int = 2, turnpolicy: int = POTRACE_TURNPOLICY_MINORITY
+) -> list:
     """
     /* Decompose the given bitmap into paths. Returns a linked list of
     path_t objects with the fields len, pt, area, sign filled
@@ -359,7 +612,7 @@ def bm_to_pathlist(bm: Image.Image,  turdsize: int = 2, turnpolicy: int = POTRAC
             break
         x, y = n
         # /* calculate the sign by looking at the original */
-        sign = '+' if BM_GET(bm, x, y) else '-'
+        sign = "+" if BM_GET(bm, x, y) else "-"
         # /* calculate the path */
         path = findpath(bm1, x, y + 1, sign, turnpolicy)
         if path is None:

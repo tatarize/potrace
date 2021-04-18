@@ -1,7 +1,5 @@
-
-
 class Point:
-    def __init__(self, x: float = 0, y:  float= 0):
+    def __init__(self, x: float = 0, y: float = 0):
         self.x = x
         self.y = y
 
@@ -70,4 +68,3 @@ class Path:
         self._curve = Curve(m)
         self._ocurve = Curve(m)
         self._fcurve = Curve(m)
-

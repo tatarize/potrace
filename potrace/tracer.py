@@ -113,8 +113,8 @@ def pointslope(pp: Path, i: int, j: int, ctr: Point, dir: Point) -> None:
     c = y2 - float(y * y / k) / k
 
     lambda2 = (
-                      a + c + math.sqrt((a - c) * (a - c) + 4 * b * b)
-              ) / 2  # /* larger e.value */
+        a + c + math.sqrt((a - c) * (a - c) + 4 * b * b)
+    ) / 2  # /* larger e.value */
 
     # /* now find e.vector for lambda2 */
     a -= lambda2
@@ -211,9 +211,7 @@ def ddist(p: Point, q: Point) -> float:
     return math.sqrt(sq(p.x - q.x) + sq(p.y - q.y))
 
 
-def bezier(
-        t: float, p0: Point, p1: Point, p2: Point, p3: Point
-) -> Point:
+def bezier(t: float, p0: Point, p1: Point, p2: Point, p3: Point) -> Point:
     """
     /* calculate point of a bezier curve */
     """
@@ -236,9 +234,7 @@ def bezier(
     )
 
 
-def tangent(
-        p0: Point, p1: Point, p2: Point, p3: Point, q0: Point, q1: Point
-) -> float:
+def tangent(p0: Point, p1: Point, p2: Point, p3: Point, q0: Point, q1: Point) -> float:
     """
     /* calculate the point t in [0..1] on the (convex) bezier curve
      (p0,p1,p2,p3) which is tangent to q1-q0. Return -1.0 if there is no
@@ -314,12 +310,14 @@ def _calc_sums(path: Path) -> int:
     n = len(path)
     path._sums = [Sums() for i in range(len(path) + 1)]
 
-    #/* origin */
+    # /* origin */
     path._x0 = path.pt[0].x
     path._y0 = path.pt[0].y
 
     # /* preparatory computation for later fast summing */
-    path._sums[0].x2 = path._sums[0].xy = path._sums[0].y2 = path._sums[0].x = path._sums[0].y = 0
+    path._sums[0].x2 = path._sums[0].xy = path._sums[0].y2 = path._sums[
+        0
+    ].x = path._sums[0].y = 0
     for i in range(n):
         x = path.pt[i].x - path._x0
         y = path.pt[i].y - path._y0
@@ -368,7 +366,9 @@ def _calc_lon(pp: Path) -> int:
         ct[0] = ct[1] = ct[2] = ct[3] = 0
 
         # keep track of "directions" that have occurred
-        dir = (3 + 3 * (pt[(i + 1) % n].x - pt[i].x) + (pt[(i + 1) % n].y - pt[i].y)) / 2
+        dir = (
+            3 + 3 * (pt[(i + 1) % n].x - pt[i].x) + (pt[(i + 1) % n].y - pt[i].y)
+        ) / 2
         ct[int(dir)] += 1
 
         constraint[0].x = 0
@@ -620,7 +620,9 @@ def _adjust_vertices(pp: Path) -> int:
 
     ctr = [Point() for i in range(m)]  # /* ctr[m] */
     dir = [Point() for i in range(m)]  # /* dir[m] */
-    q = [[[0.0 for a in range(3)] for b in range(3)] for c in range(m)]   # quadform_t/* q[m] */
+    q = [
+        [[0.0 for a in range(3)] for b in range(3)] for c in range(m)
+    ]  # quadform_t/* q[m] */
     v = [0.0, 0.0, 0.0]
     s = Point(0, 0)
     pp.init_curve(m)
@@ -815,20 +817,20 @@ def _smooth(curve: Curve, alphamax: float) -> None:
 class opti_t:
     def __init__(self):
         self.pen = 0  # /* penalty */
-        self.c = [Point(0, 0), Point(0,0)]  # /* curve parameters */
+        self.c = [Point(0, 0), Point(0, 0)]  # /* curve parameters */
         self.t = 0  # /* curve parameters */
         self.s = 0  # /* curve parameters */
         self.alpha = 0  # /* curve parameter */
 
 
 def opti_penalty(
-        pp: Path,
-        i: int,
-        j: int,
-        res: opti_t,
-        opttolerance: float,
-        convc: int,
-        areac: float,
+    pp: Path,
+    i: int,
+    j: int,
+    res: opti_t,
+    opttolerance: float,
+    convc: int,
+    areac: float,
 ) -> int:
     """
     /* calculate best fit from i+.5 to j+.5.    Assume i<j (cyclically).
@@ -857,25 +859,25 @@ def opti_penalty(
         if convc[k1] != conv:
             return 1
         if (
-                sign(
-                    cprod(
-                        pp._curve[i].vertex,
-                        pp._curve[i1].vertex,
-                        pp._curve[k1].vertex,
-                        pp._curve[k2].vertex,
-                    )
-                )
-                != conv
-        ):
-            return 1
-        if (
-                iprod1(
+            sign(
+                cprod(
                     pp._curve[i].vertex,
                     pp._curve[i1].vertex,
                     pp._curve[k1].vertex,
                     pp._curve[k2].vertex,
                 )
-                < d * ddist(pp._curve[k1].vertex, pp._curve[k2].vertex) * COS179
+            )
+            != conv
+        ):
+            return 1
+        if (
+            iprod1(
+                pp._curve[i].vertex,
+                pp._curve[i1].vertex,
+                pp._curve[k1].vertex,
+                pp._curve[k2].vertex,
+            )
+            < d * ddist(pp._curve[k1].vertex, pp._curve[k2].vertex) * COS179
         ):
             return 1
         k = k1
@@ -942,8 +944,8 @@ def opti_penalty(
         if math.fabs(d1) > opttolerance:
             return 1
         if (
-                iprod(pp._curve[k].vertex, pp._curve[k1].vertex, pt) < 0
-                or iprod(pp._curve[k1].vertex, pp._curve[k].vertex, pt) < 0
+            iprod(pp._curve[k].vertex, pp._curve[k1].vertex, pt) < 0
+            or iprod(pp._curve[k1].vertex, pp._curve[k].vertex, pt) < 0
         ):
             return 1
         res.pen += sq(d1)
@@ -1011,11 +1013,11 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
         if pp._curve[i1].tag == POTRACE_CURVETO:
             alpha = pp._curve[i1].alpha
             area += (
-                    0.3
-                    * alpha
-                    * (4 - alpha)
-                    * dpara(pp._curve[i].c[2], pp._curve[i1].vertex, pp._curve[i1].c[2])
-                    / 2
+                0.3
+                * alpha
+                * (4 - alpha)
+                * dpara(pp._curve[i].c[2], pp._curve[i1].vertex, pp._curve[i1].c[2])
+                / 2
             )
             area += dpara(p0, pp._curve[i].c[2], pp._curve[i1].c[2]) / 2
         areac[i + 1] = area
@@ -1036,14 +1038,13 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
             if opti_penalty(pp, i, j % m, o, opttolerance, convc, areac):
                 break
             if len[j] > len[i] + 1 or (
-                    len[j] == len[i] + 1 and pen[j] > pen[i] + o.pen
+                len[j] == len[i] + 1 and pen[j] > pen[i] + o.pen
             ):
                 pt[j] = i
                 pen[j] = pen[i] + o.pen
                 len[j] = len[i] + 1
                 opt[j] = o
     om = len[m]
-    # privcurve_init(&pp->ocurve, om) # TODO: FUNCTION init.
     s = [None] * om
     t = [None] * om
 
@@ -1085,10 +1086,10 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
 
 
 def process_path(
-        plist: list,
-        alphamax=1.0,
-        opticurve=True,
-        opttolerance=0.2,
+    plist: list,
+    alphamax=1.0,
+    opticurve=True,
+    opttolerance=0.2,
 ) -> int:
     """/* return 0 on success, 1 on error with errno set. */"""
 
@@ -1110,6 +1111,4 @@ def process_path(
             p._fcurve = p._ocurve
         else:
             p._fcurve = p._curve
-        # privcurve_to_curve(p.priv.fcurve, p.curve) # TODO: FUNCTION
     return 0
-

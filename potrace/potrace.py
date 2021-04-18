@@ -14,10 +14,16 @@ from decompose import bm_to_pathlist
 from tracer import process_path
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-v", "--version", action="store_true", help="prints version info and exit")
-parser.add_argument("-l", "--license", action="store_true", help="prints license info and exit")
+parser.add_argument(
+    "-v", "--version", action="store_true", help="prints version info and exit"
+)
+parser.add_argument(
+    "-l", "--license", action="store_true", help="prints license info and exit"
+)
 parser.add_argument("filename", nargs="?", type=str, help="an input file")
-parser.add_argument("-o", "--output", type=str, help="write all output to this file", default="out.svg")
+parser.add_argument(
+    "-o", "--output", type=str, help="write all output to this file", default="out.svg"
+)
 choices = ["svg"]
 parser.add_argument(
     "-b",
@@ -25,7 +31,7 @@ parser.add_argument(
     type=str,
     choices=choices,
     default="svg",
-    help="select backend by name"
+    help="select backend by name",
 )
 choices = ["black", "white", "left", "right", "minority", "majority", "random"]
 parser.add_argument(
@@ -36,15 +42,39 @@ parser.add_argument(
     default="minority",
     help="how to resolve ambiguities in path decomposition",
 )
-parser.add_argument("-t", "--turdsize", type=int, help="suppress speckles of up to this size (default 2)", default=2)
-parser.add_argument("-a", "--alphamax", type=float, help="corner threshold parameter", default=1)
-parser.add_argument("-n", "--longcurve", action="store_true", help="turn off curve optimization")
-parser.add_argument("-O", "--opttolerance", type=float, help="curve optimization tolerance", default=0.2)
-parser.add_argument("-u", "--unit", type=int, help="quantize output to 1/unit pixels", default=10)
+parser.add_argument(
+    "-t",
+    "--turdsize",
+    type=int,
+    help="suppress speckles of up to this size (default 2)",
+    default=2,
+)
+parser.add_argument(
+    "-a", "--alphamax", type=float, help="corner threshold parameter", default=1
+)
+parser.add_argument(
+    "-n", "--longcurve", action="store_true", help="turn off curve optimization"
+)
+parser.add_argument(
+    "-O", "--opttolerance", type=float, help="curve optimization tolerance", default=0.2
+)
+parser.add_argument(
+    "-u", "--unit", type=int, help="quantize output to 1/unit pixels", default=10
+)
 
-parser.add_argument("-C", "--color", type=str, help="set foreground color (default Black)", default='#000000')
-parser.add_argument("-g", "--group", action="store_true", help="group related paths together")
-parser.add_argument("-f", "--flat", action="store_true", help="whole image as a single path")
+parser.add_argument(
+    "-C",
+    "--color",
+    type=str,
+    help="set foreground color (default Black)",
+    default="#000000",
+)
+parser.add_argument(
+    "-g", "--group", action="store_true", help="group related paths together"
+)
+parser.add_argument(
+    "-f", "--flat", action="store_true", help="whole image as a single path"
+)
 
 
 def run():
@@ -56,22 +86,30 @@ def run():
         return
     if args.filename:
         image = Image.open(args.filename)
-        if image.mode != 'L':
-            image = image.convert('L')
+        if image.mode != "L":
+            image = image.convert("L")
         image = image.point(lambda e: int(e > 127) * 255)
-        image = image.convert('1')
+        image = image.convert("1")
 
         plist = bm_to_pathlist(image, turdsize=args.turdsize, turnpolicy=turnpolicy)
-        traced = process_path(plist, alphamax=args.alphamax, opticurve=not args.longcurve, opttolerance=args.opttolerance)
+        traced = process_path(
+            plist,
+            alphamax=args.alphamax,
+            opticurve=not args.longcurve,
+            opttolerance=args.opttolerance,
+        )
         if args.output:
             with open(args.output, "w") as fp:
-                fp.write('<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 %d %d">' % (image.width, image.height))
+                fp.write(
+                    '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 %d %d">'
+                    % (image.width, image.height)
+                )
                 parts = []
                 for path in plist:
                     parts.append("M")
                     for point in path.pt:
                         parts.append(" %f,%f" % (point.x, point.y))
-                    parts.append('z')
+                    parts.append("z")
                 # for path in traced:
                 #     parts.append("M%d,%d" % (path._x0, path._y0))
                 #     for segment in path._fcurve.segments:
@@ -92,7 +130,7 @@ def run():
                 #         #     parts.append("Q%f,%f %f,%f" % (w.x, w.y, b.x, b.y))
                 #     parts.append('z')
                 fp.write('<path stroke="black" fill="none" d="%s"/>' % "".join(parts))
-                fp.write('</svg>')
+                fp.write("</svg>")
     else:
         print("No image loaded.")
 
