@@ -140,24 +140,13 @@ def pointslope(pp: Path, i: int, j: int, ctr: Point, dir: Point) -> None:
 """
 
 
-class quadform_t:
-    def __init__(self):
-        self.values = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-
-    def __getitem__(self, item):
-        return self.values[item]
-
-
-def quadform(Q: quadform_t, w: Point) -> float:
+def quadform(Q: list, w: Point) -> float:
     """
     /* Apply quadratic form Q to vector w = (w.x,w.y) */
     """
 
-    v = [0.0, 0.0, 0.0]
+    v = (w.x, w.y, 1.0)
 
-    v[0] = w.x
-    v[1] = w.y
-    v[2] = 1
     sum = 0.0
 
     for i in range(3):
@@ -166,9 +155,9 @@ def quadform(Q: quadform_t, w: Point) -> float:
     return sum
 
 
-def xprod(p1: Point, p2: Point) -> float:
+def xprod(p1x, p1y, p2x, p2y) -> float:
     """/* calculate p1 x p2 */"""
-    return p1.x * p2.y - p1.y * p2.x
+    return p1x * p2y - p1y * p2x
 
 
 def cprod(p0: Point, p1: Point, p2: Point, p3: Point) -> float:
@@ -329,14 +318,9 @@ def _calc_lon(pp: Path) -> int:
     """/* returns 0 on success, 1 on error with errno set */"""
     pt = pp.pt
     n = len(pp)
-
     ct = [0, 0, 0, 0]
-    constraint = [Point(0, 0), Point(0, 0)]
-    cur = Point(0, 0)
-    off = Point(0, 0)
     pivk = [None] * n  # /* pivk[n] */
     nc = [None] * n  # NULL;        /* nc[n]: next corner */
-    dk = Point(0, 0)  # /* direction of k-k1 */
 
     """/* initialize the nc data structure. Point from each point to the
          furthest future point to which it is connected by a vertical or
@@ -367,10 +351,10 @@ def _calc_lon(pp: Path) -> int:
         ) / 2
         ct[int(dir)] += 1
 
-        constraint[0].x = 0
-        constraint[0].y = 0
-        constraint[1].x = 0
-        constraint[1].y = 0
+        constraint0x = 0
+        constraint0y = 0
+        constraint1x = 0
+        constraint1y = 0
 
         # find the next k such that no straight line from i to k
         k = nc[i]
@@ -385,31 +369,33 @@ def _calc_lon(pp: Path) -> int:
                 break_inner_loop_and_continue = True
                 break  # goto foundk;
 
-            cur.x = pt[k].x - pt[i].x
-            cur.y = pt[k].y - pt[i].y
+            cur_x = pt[k].x - pt[i].x
+            cur_y = pt[k].y - pt[i].y
 
-            if xprod(constraint[0], cur) >= 0 and xprod(constraint[1], cur) <= 0:
+            if xprod(constraint0x, constraint0y, cur_x, cur_y) >= 0 and xprod(constraint1x, constraint1y, cur_x, cur_y) <= 0:
                 # see if current constraint is violated
                 # else, update constraint
-                if abs(cur.x) <= 1 and abs(cur.y) <= 1:
+                if abs(cur_x) <= 1 and abs(cur_y) <= 1:
                     pass  # /* no constraint */
                 else:
-                    off.x = (
-                        cur.x + 1 if (cur.y >= 0 and (cur.y > 0 or cur.x < 0)) else -1
+                    off_x = (
+                        cur_x + 1 if (cur_y >= 0 and (cur_y > 0 or cur_x < 0)) else -1
                     )
-                    off.y = (
-                        cur.y + 1 if (cur.x <= 0 and (cur.x < 0 or cur.y < 0)) else -1
+                    off_y = (
+                        cur_y + 1 if (cur_x <= 0 and (cur_x < 0 or cur_y < 0)) else -1
                     )
-                    if xprod(constraint[0], off) >= 0:
-                        constraint[0] = off
-                    off.x = (
-                        cur.x + 1 if (cur.y <= 0 and (cur.y < 0 or cur.x < 0)) else -1
+                    if xprod(constraint0x, constraint0y, off_x, off_y) >= 0:
+                        constraint0x = off_x
+                        constraint0y = off_y
+                    off_x = (
+                        cur_x + 1 if (cur_y <= 0 and (cur_y < 0 or cur_x < 0)) else -1
                     )
-                    off.y = (
-                        cur.y + 1 if (cur.x >= 0 and (cur.x > 0 or cur.y < 0)) else -1
+                    off_y = (
+                        cur_y + 1 if (cur_x >= 0 and (cur_x > 0 or cur_y < 0)) else -1
                     )
-                    if xprod(constraint[1], off) <= 0:
-                        constraint[1] = off
+                    if xprod(constraint1x, constraint1y, off_x, off_y) <= 0:
+                        constraint1x = off_x
+                        constraint1y = off_y
                 k1 = k
                 k = nc[k1]
                 if not cyclic(k, i, k1):
@@ -424,17 +410,18 @@ def _calc_lon(pp: Path) -> int:
         """/* k1 was the last "corner" satisfying the current constraint, and
              k is the first one violating it. We now need to find the last
              point along k1..k which satisfied the constraint. */"""
-        dk.x = sign(pt[k].x - pt[k1].x)
-        dk.y = sign(pt[k].y - pt[k1].y)
-        cur.x = pt[k1].x - pt[i].x
-        cur.y = pt[k1].y - pt[i].y
+        #dk /* direction of k-k1 */
+        dk_x = sign(pt[k].x - pt[k1].x)
+        dk_y = sign(pt[k].y - pt[k1].y)
+        cur_x = pt[k1].x - pt[i].x
+        cur_y = pt[k1].y - pt[i].y
         """/* find largest integer j such that xprod(constraint[0], cur+j*dk)
              >= 0 and xprod(constraint[1], cur+j*dk) <= 0. Use bilinearity
              of xprod. */"""
-        a = xprod(constraint[0], cur)
-        b = xprod(constraint[0], dk)
-        c = xprod(constraint[1], cur)
-        d = xprod(constraint[1], dk)
+        a = xprod(constraint0x, constraint0y, cur_x, cur_y)
+        b = xprod(constraint0x, constraint0y, dk_x, dk_y)
+        c = xprod(constraint1x, constraint1y, cur_x, cur_y)
+        d = xprod(constraint1x, constraint1y, dk_x, dk_y)
         """find largest integer j such that a+j*b>=0 and c+j*d<=0. This
              can be solved with integer arithmetic."""
         j = INFTY
@@ -590,6 +577,7 @@ def _bestpolygon(pp: Path) -> int:
         i = prev[i]
         pp._po[j] = i
         j -= 1
+    print(pp._po)
     return 0
 
 
