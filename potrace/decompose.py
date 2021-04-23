@@ -368,13 +368,13 @@ def findpath(bm: Image, x0: int, y0: int, sign: str, turnpolicy: int) -> Path:
     x = x0
     y = y0
     dirx = 0
-    diry = -1
+    diry = -1 # diry-1
     pt = []
     area = 0
 
     while True:  # /* while this path */
         # /* add point to path */
-        pt.append(Point(x, y))
+        pt.append(Point(int(x), int(y)))
 
         # /* move to next point */
         x += dirx
@@ -386,8 +386,8 @@ def findpath(bm: Image, x0: int, y0: int, sign: str, turnpolicy: int) -> Path:
             break
 
         # /* determine next direction */
-        c = BM_GET(bm, x + (dirx + diry - 1) / 2, y + (diry - dirx - 1) / 2)
-        d = BM_GET(bm, x + (dirx - diry - 1) / 2, y + (diry + dirx - 1) / 2)
+        c = BM_GET(bm, x + (dirx + diry - 1) // 2, y + (diry - dirx - 1) // 2)
+        d = BM_GET(bm, x + (dirx - diry - 1) // 2, y + (diry + dirx - 1) // 2)
 
         if c and not d:  # /* ambiguous turn */
             if (

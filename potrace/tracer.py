@@ -23,6 +23,24 @@ def sign(x):
         return 0
 
 
+def mod(a: int, n: int) -> int:
+    """Note: the "mod" macro works correctly for
+    negative a. Also note that the test for a>=n, while redundant,
+    speeds up the mod function by 70% in the average case (significant
+    since the program spends about 16% of its time here - or 40%
+    without the test)."""
+    return a % n if a >= n else a if a >= 0 else n - 1 - (-1 - a) % n
+
+
+def floordiv(a: int, n:int):
+    """
+    The "floordiv" macro returns the largest integer <= a/n,
+    and again this works correctly for negative a, as long as
+    a,n are integers and n>0.
+    """
+    return a//n if a >= 0 else -1-(-1-a)//n
+
+
 def interval(t: float, a: Point, b: Point):
     return Point(a.x + t * (b.x - a.x), a.y + t * (b.y - a.y))
 
@@ -141,14 +159,9 @@ def pointslope(pp: Path, i: int, j: int, ctr: Point, dir: Point) -> None:
 
 
 def quadform(Q: list, w: Point) -> float:
-    """
-    /* Apply quadratic form Q to vector w = (w.x,w.y) */
-    """
-
+    """Apply quadratic form Q to vector w = (w.x,w.y)"""
     v = (w.x, w.y, 1.0)
-
     sum = 0.0
-
     for i in range(3):
         for j in range(3):
             sum += v[i] * Q[i][j] * v[j]
@@ -156,12 +169,12 @@ def quadform(Q: list, w: Point) -> float:
 
 
 def xprod(p1x, p1y, p2x, p2y) -> float:
-    """/* calculate p1 x p2 */"""
+    """calculate p1 x p2"""
     return p1x * p2y - p1y * p2x
 
 
 def cprod(p0: Point, p1: Point, p2: Point, p3: Point) -> float:
-    """/* calculate (p1-p0)x(p3-p2) */"""
+    """calculate (p1-p0)x(p3-p2)"""
     x1 = p1.x - p0.x
     y1 = p1.y - p0.y
     x2 = p3.x - p2.x
@@ -170,7 +183,7 @@ def cprod(p0: Point, p1: Point, p2: Point, p3: Point) -> float:
 
 
 def iprod(p0: Point, p1: Point, p2: Point) -> float:
-    """/* calculate (p1-p0)*(p2-p0) */"""
+    """calculate (p1-p0)*(p2-p0)"""
     x1 = p1.x - p0.x
     y1 = p1.y - p0.y
     x2 = p2.x - p0.x
@@ -179,7 +192,7 @@ def iprod(p0: Point, p1: Point, p2: Point) -> float:
 
 
 def iprod1(p0: Point, p1: Point, p2: Point, p3: Point) -> float:
-    """/* calculate (p1-p0)*(p3-p2) */"""
+    """calculate (p1-p0)*(p3-p2)"""
     x1 = p1.x - p0.x
     y1 = p1.y - p0.y
     x2 = p3.x - p2.x
@@ -192,14 +205,12 @@ def sq(x: float) -> float:
 
 
 def ddist(p: Point, q: Point) -> float:
-    """/* calculate distance between two points */"""
+    """calculate distance between two points"""
     return math.sqrt(sq(p.x - q.x) + sq(p.y - q.y))
 
 
 def bezier(t: float, p0: Point, p1: Point, p2: Point, p3: Point) -> Point:
-    """
-    /* calculate point of a bezier curve */
-    """
+    """calculate point of a bezier curve"""
     s = 1 - t
 
     """
@@ -220,13 +231,12 @@ def bezier(t: float, p0: Point, p1: Point, p2: Point, p3: Point) -> Point:
 
 
 def tangent(p0: Point, p1: Point, p2: Point, p3: Point, q0: Point, q1: Point) -> float:
-    """
-    /* calculate the point t in [0..1] on the (convex) bezier curve
-     (p0,p1,p2,p3) which is tangent to q1-q0. Return -1.0 if there is no
-     solution in [0..1]. */
-    """
-    # /* (1-t)^2 A + 2(1-t)t B + t^2 C = 0 */
-    # /* a t^2 + b t + c = 0 */
+    """calculate the point t in [0..1] on the (convex) bezier curve
+    (p0,p1,p2,p3) which is tangent to q1-q0. Return -1.0 if there is no
+    solution in [0..1]."""
+
+    # (1-t)^2 A + 2(1-t)t B + t^2 C = 0
+    # a t^2 + b t + c = 0
 
     A = cprod(p0, p1, q0, q1)
     B = cprod(p1, p2, q0, q1)
@@ -246,9 +256,9 @@ def tangent(p0: Point, p1: Point, p2: Point, p3: Point, q0: Point, q1: Point) ->
     r1 = (-b + s) / (2 * a)
     r2 = (-b - s) / (2 * a)
 
-    if r1 >= 0 and r1 <= 1:
+    if 0 <= r1 <= 1:
         return r1
-    elif r2 >= 0 and r2 <= 1:
+    elif 0 <= r2 <= 1:
         return r2
     else:
         return -1.0
@@ -287,22 +297,26 @@ def tangent(p0: Point, p1: Point, p2: Point, p3: Point, q0: Point, q1: Point) ->
 """
 
 
+# ----------------------------------------------------------------------
+
+
 def _calc_sums(path: Path) -> int:
-    """/* ---------------------------------------------------------------------- */
-    /* Preparation: fill in the sum* fields of a path (used for later
+    """Preparation: fill in the sum* fields of a path (used for later
     rapid summing). Return 0 on success, 1 with errno set on
-    failure. */"""
+    failure."""
     n = len(path)
     path._sums = [Sums() for i in range(len(path) + 1)]
 
-    # /* origin */
+    # origin
     path._x0 = path.pt[0].x
     path._y0 = path.pt[0].y
 
     # /* preparatory computation for later fast summing */
-    path._sums[0].x2 = path._sums[0].xy = path._sums[0].y2 = path._sums[
-        0
-    ].x = path._sums[0].y = 0
+    path._sums[0].x2 = 0
+    path._sums[0].xy = 0
+    path._sums[0].y2 = 0
+    path._sums[0].x = 0
+    path._sums[0].y = 0
     for i in range(n):
         x = path.pt[i].x - path._x0
         y = path.pt[i].y - path._y0
@@ -315,20 +329,21 @@ def _calc_sums(path: Path) -> int:
 
 
 def _calc_lon(pp: Path) -> int:
-    """/* returns 0 on success, 1 on error with errno set */"""
+    """initialize the nc data structure. Point from each point to the
+    furthest future point to which it is connected by a vertical or
+    horizontal segment. We take advantage of the fact that there is
+    always a direction change at 0 (due to the path decomposition
+    algorithm). But even if this were not so, there is no harm, as
+    in practice, correctness does not depend on the word "furthest"
+    above.
+        returns 0 on success, 1 on error with errno set
+    """
+
     pt = pp.pt
     n = len(pp)
     ct = [0, 0, 0, 0]
-    pivk = [None] * n  # /* pivk[n] */
-    nc = [None] * n  # NULL;        /* nc[n]: next corner */
-
-    """/* initialize the nc data structure. Point from each point to the
-         furthest future point to which it is connected by a vertical or
-         horizontal segment. We take advantage of the fact that there is
-         always a direction change at 0 (due to the path decomposition
-         algorithm). But even if this were not so, there is no harm, as
-         in practice, correctness does not depend on the word "furthest"
-         above.    */"""
+    pivk = [None] * n  # pivk[n]
+    nc = [None] * n  # nc[n]: next corner
 
     k = 0
     for i in range(n - 1, -1, -1):
@@ -341,15 +356,15 @@ def _calc_lon(pp: Path) -> int:
     # determine pivot points: for each i, let pivk[i] be the furthest k
     # such that all j with i<j<k lie on a line connecting i,k.
 
-    break_inner_loop_and_continue = False
     for i in range(n - 1, -1, -1):
         ct[0] = ct[1] = ct[2] = ct[3] = 0
 
         # keep track of "directions" that have occurred
-        dir = (
-            3 + 3 * (pt[(i + 1) % n].x - pt[i].x) + (pt[(i + 1) % n].y - pt[i].y)
-        ) / 2
-        ct[int(dir)] += 1
+        dir = int(
+            (3 + 3 * (pt[mod(i + 1, n)].x - pt[i].x) + (pt[mod(i + 1, n)].y - pt[i].y))
+            // 2
+        )
+        ct[dir] += 1
 
         constraint0x = 0
         constraint0y = 0
@@ -360,8 +375,9 @@ def _calc_lon(pp: Path) -> int:
         k = nc[i]
         k1 = i
         while True:
-            dir = (3 + 3 * sign(pt[k].x - pt[k1].x) + sign(pt[k].y - pt[k1].y)) / 2
-            ct[int(dir)] += 1
+            break_inner_loop_and_continue = False
+            dir = int(3 + 3 * sign(pt[k].x - pt[k1].x) + sign(pt[k].y - pt[k1].y)) // 2
+            ct[dir] += 1
 
             # if all four "directions" have occurred, cut this path
             if ct[0] and ct[1] and ct[2] and ct[3]:
@@ -372,64 +388,54 @@ def _calc_lon(pp: Path) -> int:
             cur_x = pt[k].x - pt[i].x
             cur_y = pt[k].y - pt[i].y
 
-            if xprod(constraint0x, constraint0y, cur_x, cur_y) >= 0 and xprod(constraint1x, constraint1y, cur_x, cur_y) <= 0:
-                # see if current constraint is violated
-                # else, update constraint
-                if abs(cur_x) <= 1 and abs(cur_y) <= 1:
-                    pass  # /* no constraint */
-                else:
-                    off_x = (
-                        cur_x + 1 if (cur_y >= 0 and (cur_y > 0 or cur_x < 0)) else -1
-                    )
-                    off_y = (
-                        cur_y + 1 if (cur_x <= 0 and (cur_x < 0 or cur_y < 0)) else -1
-                    )
-                    if xprod(constraint0x, constraint0y, off_x, off_y) >= 0:
-                        constraint0x = off_x
-                        constraint0y = off_y
-                    off_x = (
-                        cur_x + 1 if (cur_y <= 0 and (cur_y < 0 or cur_x < 0)) else -1
-                    )
-                    off_y = (
-                        cur_y + 1 if (cur_x >= 0 and (cur_x > 0 or cur_y < 0)) else -1
-                    )
-                    if xprod(constraint1x, constraint1y, off_x, off_y) <= 0:
-                        constraint1x = off_x
-                        constraint1y = off_y
-                k1 = k
-                k = nc[k1]
-                if not cyclic(k, i, k1):
-                    break
+            if xprod(constraint0x, constraint0y, cur_x, cur_y) < 0 or xprod(constraint1x, constraint1y, cur_x, cur_y) > 0:
+                break
+            # see if current constraint is violated
+            # else, update constraint
+            if abs(cur_x) <= 1 and abs(cur_y) <= 1:
+                pass  # /* no constraint */
             else:
+                off_x = cur_x + (1 if (cur_y >= 0 and (cur_y > 0 or cur_x < 0)) else -1)
+                off_y = cur_y + (1 if (cur_x <= 0 and (cur_x < 0 or cur_y < 0)) else -1)
+                if xprod(constraint0x, constraint0y, off_x, off_y) >= 0:
+                    constraint0x = off_x
+                    constraint0y = off_y
+                off_x = cur_x + (1 if (cur_y <= 0 and (cur_y < 0 or cur_x < 0)) else -1)
+                off_y = cur_y + (1 if (cur_x >= 0 and (cur_x > 0 or cur_y < 0)) else -1)
+                if xprod(constraint1x, constraint1y, off_x, off_y) <= 0:
+                    constraint1x = off_x
+                    constraint1y = off_y
+            k1 = k
+            k = nc[k1]
+            if not cyclic(k, i, k1):
                 break
         if break_inner_loop_and_continue:
             # This previously was a goto to the end of the for i statement.
             break_inner_loop_and_continue = False
             continue
         # constraint_viol:
-        """/* k1 was the last "corner" satisfying the current constraint, and
-             k is the first one violating it. We now need to find the last
-             point along k1..k which satisfied the constraint. */"""
-        #dk /* direction of k-k1 */
+        """k1 was the last "corner" satisfying the current constraint, and
+        k is the first one violating it. We now need to find the last
+        point along k1..k which satisfied the constraint."""
+        # dk: direction of k-k1
         dk_x = sign(pt[k].x - pt[k1].x)
         dk_y = sign(pt[k].y - pt[k1].y)
         cur_x = pt[k1].x - pt[i].x
         cur_y = pt[k1].y - pt[i].y
-        """/* find largest integer j such that xprod(constraint[0], cur+j*dk)
-             >= 0 and xprod(constraint[1], cur+j*dk) <= 0. Use bilinearity
-             of xprod. */"""
+        """find largest integer j such that xprod(constraint[0], cur+j*dk) >= 0 
+        and xprod(constraint[1], cur+j*dk) <= 0. Use bilinearity of xprod. */"""
         a = xprod(constraint0x, constraint0y, cur_x, cur_y)
         b = xprod(constraint0x, constraint0y, dk_x, dk_y)
         c = xprod(constraint1x, constraint1y, cur_x, cur_y)
         d = xprod(constraint1x, constraint1y, dk_x, dk_y)
         """find largest integer j such that a+j*b>=0 and c+j*d<=0. This
-             can be solved with integer arithmetic."""
+        can be solved with integer arithmetic."""
         j = INFTY
         if b < 0:
-            j = math.floor(a / -b)
+            j = floordiv(a, -b)
         if d > 0:
-            j = min(j, math.floor(-c / d))
-        pivk[i] = (k1 + j) % n
+            j = min(j, floordiv(-c, d))
+        pivk[i] = mod(k1 + j, n)
         # foundk:
         # /* for i */
 
@@ -444,7 +450,7 @@ def _calc_lon(pp: Path) -> int:
         pp._lon[i] = j
 
     i = n - 1
-    while cyclic((i + 1) % n, j, pp._lon[i]):
+    while cyclic(mod(i + 1, n), j, pp._lon[i]):
         pp._lon[i] = j
         i -= 1
     return 0
@@ -457,10 +463,8 @@ def _calc_lon(pp: Path) -> int:
 
 
 def penalty3(pp: Path, i: int, j: int) -> float:
-    """
-    Auxiliary function: calculate the penalty of an edge from i to j in
-     the given path. This needs the "lon" and "sum*" data.
-    """
+    """Auxiliary function: calculate the penalty of an edge from i to j in
+    the given path. This needs the "lon" and "sum*" data."""
     n = len(pp)
     pt = pp.pt
     sums = pp._sums
@@ -498,7 +502,6 @@ def penalty3(pp: Path, i: int, j: int) -> float:
     c = (y2 - 2 * y * py) / k + py * py
 
     s = ex * ex * a + 2 * ex * ey * b + ey * ey * c
-
     return math.sqrt(s)
 
 
@@ -518,9 +521,9 @@ def _bestpolygon(pp: Path) -> int:
 
     # /* calculate clipped paths */
     for i in range(n):
-        c = (pp._lon[(i - 1) % n] - 1) % n
+        c = mod(pp._lon[mod(i - 1, n)] - 1, n)
         if c == i:
-            c = (i + 1) % n
+            c = mod(i + 1, n)
         if c < i:
             clip0[i] = n
         else:
@@ -613,8 +616,8 @@ def _adjust_vertices(pp: Path) -> int:
 
     # /* calculate "optimal" point-slope representation for each line segment */
     for i in range(m):
-        j = po[(i + 1) % m]
-        j = ((j - po[i]) % n) + po[i]
+        j = po[mod(i + 1, m)]
+        j = mod(j - po[i], n) + po[i]
         pointslope(pp, po[i], j, ctr[i], dir[i])
 
         # /* represent each line segment as a singular quadratic form;
@@ -649,7 +652,7 @@ def _adjust_vertices(pp: Path) -> int:
 
         # /* intersect segments i-1 and i */
 
-        j = (i - 1) % m
+        j = mod(i - 1, m)
 
         # /* add quadratic forms */
         for l in range(3):
@@ -758,8 +761,8 @@ def _smooth(curve: Curve, alphamax: float) -> None:
 
     # /* examine each vertex and find its best fit */
     for i in range(m):
-        j = (i + 1) % m
-        k = (i + 2) % m
+        j = mod(i + 1, m)
+        k = mod(i + 2, m)
         p4 = interval(1 / 2.0, curve[k].vertex, curve[j].vertex)
 
         denom = ddenom(curve[i].vertex, curve[k].vertex)
@@ -830,16 +833,16 @@ def opti_penalty(
         return 1
 
     k = i
-    i1 = (i + 1) % m
-    k1 = (k + 1) % m
+    i1 = mod(i + 1, m)
+    k1 = mod(k + 1, m)
     conv = convc[k1]
     if conv == 0:
         return 1
     d = ddist(pp._curve[i].vertex, pp._curve[i1].vertex)
     k = k1
     while k != j:
-        k1 = (k + 1) % m
-        k2 = (k + 2) % m
+        k1 = mod(k + 1, m)
+        k2 = mod(k + 2, m)
         if convc[k1] != conv:
             return 1
         if (
@@ -867,10 +870,10 @@ def opti_penalty(
         k = k1
 
     # /* the curve we're working in: */
-    p0 = pp._curve[i % m].c[2]
-    p1 = pp._curve[(i + 1) % m].vertex
-    p2 = pp._curve[j % m].vertex
-    p3 = pp._curve[j % m].c[2]
+    p0 = pp._curve[mod(i, m)].c[2]
+    p1 = pp._curve[mod(i + 1, m)].vertex
+    p2 = pp._curve[mod(j, m)].vertex
+    p3 = pp._curve[mod(j, m)].c[2]
 
     # /* determine its area */
     area = areac[j] - areac[i]
@@ -914,9 +917,9 @@ def opti_penalty(
 
     # /* calculate penalty */
     # /* check tangency with edges */
-    k = (i + 1) % m
+    k = mod(i + 1, m)
     while k != j:
-        k1 = (k + 1) % m
+        k1 = mod(k + 1, m)
         t = tangent(p0, p1, p2, p3, pp._curve[k].vertex, pp._curve[k1].vertex)
         if t < -0.5:
             return 1
@@ -938,7 +941,7 @@ def opti_penalty(
     # /* check corners */
     k = i
     while k != j:
-        k1 = (k + 1) % m
+        k1 = mod(k + 1, m)
         t = tangent(p0, p1, p2, p3, pp._curve[k].c[2], pp._curve[k1].c[2])
         if t < -0.5:
             return 1
@@ -970,7 +973,7 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
     pt = [0] * (m + 1)  # /* pt[m+1] */
     pen = [0.0] * (m + 1)  # /* pen[m+1] */
     len = [0] * (m + 1)  # /* len[m+1] */
-    opt = [opti_t() for i in range(m+1)]  # /* opt[m+1] */
+    opt = [opti_t() for i in range(m + 1)]  # /* opt[m+1] */
 
     convc = [0.0] * m  # /* conv[m]: pre-computed convexities */
     areac = [0.0] * (m + 1)  # /* cumarea[m+1]: cache for fast area computation */
@@ -980,9 +983,9 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
         if pp._curve[i].tag == POTRACE_CURVETO:
             convc[i] = sign(
                 dpara(
-                    pp._curve[(i - 1) % m].vertex,
+                    pp._curve[mod(i - 1, m)].vertex,
                     pp._curve[i].vertex,
-                    pp._curve[(i + 1) % m].vertex,
+                    pp._curve[mod(i + 1, m)].vertex,
                 )
             )
         else:
@@ -993,7 +996,7 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
     areac[0] = 0.0
     p0 = pp._curve[0].vertex
     for i in range(m):
-        i1 = (i + 1) % m
+        i1 = mod(i + 1, m)
         if pp._curve[i1].tag == POTRACE_CURVETO:
             alpha = pp._curve[i1].alpha
             area += (
@@ -1019,7 +1022,7 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
         len[j] = len[j - 1] + 1
         for i in range(j - 2, -1, -1):
             o = opt[j]
-            if opti_penalty(pp, i, j % m, o, opttolerance, convc, areac):
+            if opti_penalty(pp, i, mod(j, m), o, opttolerance, convc, areac):
                 break
             if len[j] > len[i] + 1 or (
                 len[j] == len[i] + 1 and pen[j] > pen[i] + o.pen
@@ -1036,22 +1039,22 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
     j = m
     for i in range(om - 1, -1, -1):
         if pt[j] == j - 1:
-            pp._ocurve[i].tag = pp._curve[j % m].tag
-            pp._ocurve[i].c[0] = pp._curve[j % m].c[0]
-            pp._ocurve[i].c[1] = pp._curve[j % m].c[1]
-            pp._ocurve[i].c[2] = pp._curve[j % m].c[2]
-            pp._ocurve[i].vertex = pp._curve[j % m].vertex
-            pp._ocurve[i].alpha = pp._curve[j % m].alpha
-            pp._ocurve[i].alpha0 = pp._curve[j % m].alpha0
-            pp._ocurve[i].beta = pp._curve[j % m].beta
+            pp._ocurve[i].tag = pp._curve[mod(j, m)].tag
+            pp._ocurve[i].c[0] = pp._curve[mod(j, m)].c[0]
+            pp._ocurve[i].c[1] = pp._curve[mod(j, m)].c[1]
+            pp._ocurve[i].c[2] = pp._curve[mod(j, m)].c[2]
+            pp._ocurve[i].vertex = pp._curve[mod(j, m)].vertex
+            pp._ocurve[i].alpha = pp._curve[mod(j, m)].alpha
+            pp._ocurve[i].alpha0 = pp._curve[mod(j, m)].alpha0
+            pp._ocurve[i].beta = pp._curve[mod(j, m)].beta
             s[i] = t[i] = 1.0
         else:
             pp._ocurve[i].tag = POTRACE_CURVETO
             pp._ocurve[i].c[0] = opt[j].c[0]
             pp._ocurve[i].c[1] = opt[j].c[1]
-            pp._ocurve[i].c[2] = pp._curve[j % m].c[2]
+            pp._ocurve[i].c[2] = pp._curve[mod(j, m)].c[2]
             pp._ocurve[i].vertex = interval(
-                opt[j].s, pp._curve[j % m].c[2], pp._curve[j % m].vertex
+                opt[j].s, pp._curve[mod(j, m)].c[2], pp._curve[mod(j, m)].vertex
             )
             pp._ocurve[i].alpha = opt[j].alpha
             pp._ocurve[i].alpha0 = opt[j].alpha
@@ -1061,7 +1064,7 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
 
     # /* calculate beta parameters */
     for i in range(om):
-        i1 = (i + 1) % om
+        i1 = mod(i + 1, om)
         pp._ocurve[i].beta = s[i] / (s[i] + t[i1])
     pp._ocurve.alphacurve = True
     return 0

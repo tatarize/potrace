@@ -10,7 +10,7 @@ import sys
 
 from PIL import Image
 
-from .decompose import bm_to_pathlist
+from .decompose import bm_to_pathlist, bm_to_pathlist2
 from .tracer import process_path, POTRACE_CORNER
 
 parser = argparse.ArgumentParser()
