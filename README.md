@@ -1,19 +1,28 @@
 # Python potrace
 Pure Python Port of Potrace. This is a python port of Peter Selinger's Potrace (based on 1.16 code).
 
+<img width="200" height="200" src="https://gist.githubusercontent.com/tatarize/42884e5e99cda88aa5ddc2b0ab280973/raw/488cafa1811bd2227458390804910fbc4a90b9ea/head.svg"/>
+
+![head-orig3](https://user-images.githubusercontent.com/3302478/115929160-2757f180-a43c-11eb-88dc-1320706c9a3f.png)
+
 Rather than using the original bitmap code this port uses the python Pillow library for graphics loading, and editing.
 
-This port is needed because many python hooks to the original code such as `pypotrace` have installation issues with some OSes, and compilation problems.
+This port is needed because many python hooks to the original code such as `pypotrace` have installation issues with some OSes and compilation problems with others.
 
 # Installing
 
-The intent is to permit pip installation, however this is not yet an approved port, and cannot be uploaded to pypi until it is. The intent is to use the `potrace` namespace on pypi: https://pypi.org/project/potrace/
+The intent is to permit pip installation, with valid script entrypoints for potrace. However this is not yet an approved port, and cannot be uploaded to pypi until it is. The intent is to use the `potrace` namespace on pypi: https://pypi.org/project/potrace/
+
+For now, download the package library and type: `pip install -U .` in the package directory. Addon-backends will be automatically detected if they are installed with pip. See `backend-svg` for how to author a backend plugin.
 
 
-For now, download the package library and type: `pip install -U .` in the package directory. Addon backends will be automatically detected if installed with pip. see `backend-svg` for how to author a plugin backend. 
+# Command Line
+
+If installed with pip and python is in your path, you may use 'potrace' to run the Python Potrace.
 
 
 ```
+potrace --help
 usage: potrace [-h] [-v] [-l] [-o OUTPUT] [-b {svg,jagged-svg}]
                [-z {black,white,left,right,minority,majority,random}]
                [-t TURDSIZE] [-a ALPHAMAX] [-n] [-O OPTTOLERANCE] [-C COLOR]
