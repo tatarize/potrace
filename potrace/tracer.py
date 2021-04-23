@@ -713,7 +713,8 @@ def _adjust_vertices(pp: Path) -> int:
                     ymin = w.y
         if Q[1][1] != 0.0:
             for z in range(2):  # /* value of the x-coordinate */
-                w = Point(s.x - 0.5 + z, -(Q[1][0] * w.x + Q[1][2]) / Q[1][1])
+                w.x = s.x - 0.5 + z
+                w.y = -(Q[1][0] * w.x + Q[1][2]) / Q[1][1]
                 dy = math.fabs(w.y - s.y)
                 cand = quadform(Q, w)
                 if dy <= 0.5 and cand < min:
@@ -899,7 +900,7 @@ def opti_penalty(
     A = A2 * t / 2.0
 
     if A == 0.0:  # this should never happen
-        raise 1
+        return 1
 
     R = area / A  # /* relative area */
     alpha = 2 - math.sqrt(4 - R / 0.3)  # /* overall alpha for p0-o-p3 curve */
@@ -911,7 +912,9 @@ def opti_penalty(
     res.s = s
 
     p1 = res.c[0]
+    p1 = Point(p1.x, p1.y)
     p2 = res.c[1]  # /* the proposed curve is now (p0,p1,p2,p3) */
+    p2 = Point(p2.x, p2.y)
 
     res.pen = 0
 
