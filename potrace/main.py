@@ -1,9 +1,9 @@
 """
-/* Copyright (C) 2001-2019 Peter Selinger.
-     This file is part of Potrace. It is free software and it is covered
-     by the GNU General Public License. See the file COPYING for details. */
+Copyright (C) 2001-2019 Peter Selinger.
+This file is part of Potrace. It is free software and it is covered
+by the GNU General Public License. See the file COPYING for details.
 
-    Python Port by Tatarize, April 2021
+Python Port by Tatarize, April 2021
 """
 
 import argparse
@@ -91,6 +91,32 @@ parser.add_argument(
     help="set foreground color (default Black)",
     default="#000000",
 )
+parser.add_argument(
+    "-i",
+    "--invert",
+    action="store_true",
+    help="invert bitmap",
+)
+parser.add_argument(
+    "-k",
+    "--blacklevel",
+    type=float,
+    default=0.5,
+    help="invert bitmap",
+)
+parser.add_argument(
+    "-s",
+    "--scale",
+    type=int,
+    default=1,
+    help="Scale the image by an integer factor n>0.",
+)
+parser.add_argument(
+    "-1",
+    "--dither",
+    action="store_true",
+    help="Dither rather than threshold to 1-bit.",
+)
 
 
 def run():
@@ -102,7 +128,7 @@ def run():
         return
     if args.license:
         try:
-            with open("LICENSE","r") as f:
+            with open("LICENSE", "r") as f:
                 lines = f.readlines()
                 for line in lines:
                     if line.endswith('\n'):
@@ -119,11 +145,26 @@ def run():
             print("No backends exist to process output.")
             return
     if args.filename:
-        image = Image.open(args.filename)
-        if image.mode != "L":
-            image = image.convert("L")
-        image = image.point(lambda e: int(e > 127) * 255)
-        image = image.convert("1")
+        try:
+            image = Image.open(args.filename)
+        except IOError:
+            print("Image (%s) could not be loaded." % args.filename)
+            return
+        if args.scale != 1:
+            scale = args.scale
+            if isinstance(image, Image.Image):
+                image = image.resize((scale * image.width, scale * image.height), Image.BICUBIC)
+        if args.dither:
+            image = image.convert("1")
+        else:
+            if image.mode != "L":
+                image = image.convert("L")
+            if args.invert:
+                points = lambda e: 255 if (e/255.0) < args.blacklevel else 0
+            else:
+                points = lambda e: 0 if (e / 255.0) < args.blacklevel else 255
+            image = image.point(points)
+            image = image.convert("1")
 
         plist = bm_to_pathlist(image, turdsize=args.turdsize, turnpolicy=turnpolicy)
         process_path(
@@ -135,4 +176,4 @@ def run():
         if args.output:
             output(args, image, plist)
     else:
-        print("No image loaded.")
+        print("No image loaded.\n 'potrace --help' for help.")

@@ -414,7 +414,6 @@ def _calc_lon(pp: Path) -> int:
                 break
         if break_inner_loop_and_continue:
             # This previously was a goto to the end of the for i statement.
-            break_inner_loop_and_continue = False
             continue
         # constraint_viol:
         """k1 was the last "corner" satisfying the current constraint, and

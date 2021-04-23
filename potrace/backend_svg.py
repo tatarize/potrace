@@ -28,30 +28,24 @@ def backend_svg(args, image, plist):
             % (image.width, image.height)
         )
         parts = []
-        if args.decompose_only:
-            parts.append("M")
-            for path in plist:
-                for point in path.pt:
-                    parts.append(" %f,%f" % (point.x, point.y))
-        else:
-            for path in plist:
-                fs = path._fcurve[-1].c[2]
-                parts.append("M%f,%f" % (fs.x, fs.y))
-                for segment in path._fcurve.segments:
-                    if segment.tag == POTRACE_CORNER:
-                        a = segment.c[1]
-                        parts.append("L%f,%f" % (a.x, a.y))
-                        b = segment.c[2]
-                        parts.append("L%f,%f" % (b.x, b.y))
-                    else:
-                        a = segment.c[0]
-                        b = segment.c[1]
-                        c = segment.c[2]
-                        parts.append(
-                            "C%f,%f %f,%f %f,%f"
-                            % (a.x, a.y, b.x, b.y, c.x, c.y)
-                        )
-                parts.append("z")
+        for path in plist:
+            fs = path._fcurve[-1].c[2]
+            parts.append("M%f,%f" % (fs.x, fs.y))
+            for segment in path._fcurve.segments:
+                if segment.tag == POTRACE_CORNER:
+                    a = segment.c[1]
+                    parts.append("L%f,%f" % (a.x, a.y))
+                    b = segment.c[2]
+                    parts.append("L%f,%f" % (b.x, b.y))
+                else:
+                    a = segment.c[0]
+                    b = segment.c[1]
+                    c = segment.c[2]
+                    parts.append(
+                        "C%f,%f %f,%f %f,%f"
+                        % (a.x, a.y, b.x, b.y, c.x, c.y)
+                    )
+            parts.append("z")
         fp.write(
             '<path stroke="none" fill="%s" fill-rule="evenodd" d="%s"/>'
             % (args.color, "".join(parts))
