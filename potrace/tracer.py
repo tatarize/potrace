@@ -32,13 +32,13 @@ def mod(a: int, n: int) -> int:
     return a % n if a >= n else a if a >= 0 else n - 1 - (-1 - a) % n
 
 
-def floordiv(a: int, n:int):
+def floordiv(a: int, n: int):
     """
     The "floordiv" macro returns the largest integer <= a/n,
     and again this works correctly for negative a, as long as
     a,n are integers and n>0.
     """
-    return a//n if a >= 0 else -1-(-1-a)//n
+    return a // n if a >= 0 else -1 - (-1 - a) // n
 
 
 def interval(t: float, a: Point, b: Point):
@@ -388,7 +388,10 @@ def _calc_lon(pp: Path) -> int:
             cur_x = pt[k].x - pt[i].x
             cur_y = pt[k].y - pt[i].y
 
-            if xprod(constraint0x, constraint0y, cur_x, cur_y) < 0 or xprod(constraint1x, constraint1y, cur_x, cur_y) > 0:
+            if (
+                xprod(constraint0x, constraint0y, cur_x, cur_y) < 0
+                or xprod(constraint1x, constraint1y, cur_x, cur_y) > 0
+            ):
                 break
             # see if current constraint is violated
             # else, update constraint

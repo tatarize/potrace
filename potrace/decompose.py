@@ -291,7 +291,9 @@ def detrand(x: int, y: int) -> int:
 
 
 def BM_GET(bm: Image.Image, x: int, y: int):
-    return bm.getpixel((x, y)) == 0 if 0 <= x < bm.width and 0 <= y < bm.height else False
+    return (
+        bm.getpixel((x, y)) == 0 if 0 <= x < bm.width and 0 <= y < bm.height else False
+    )
 
 
 def majority(bm: Image, x: int, y: int) -> int:
@@ -368,7 +370,7 @@ def findpath(bm: Image, x0: int, y0: int, sign: str, turnpolicy: int) -> Path:
     x = x0
     y = y0
     dirx = 0
-    diry = -1 # diry-1
+    diry = -1  # diry-1
     pt = []
     area = 0
 
