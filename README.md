@@ -10,7 +10,7 @@ This port is needed because many python hooks to the original code such as `pypo
 The intent is to permit pip installation, however this is not yet an approved port, and cannot be uploaded to pypi until it is. The intent is to use the `potrace` namespace on pypi: https://pypi.org/project/potrace/
 
 
-For now, download the download the package library and type: `pip install -U .` in the package directory. Addon backends will be automatically detected if installed with pip. `backend-svg` for how to author a plugin backend. 
+For now, download the package library and type: `pip install -U .` in the package directory. Addon backends will be automatically detected if installed with pip. see `backend-svg` for how to author a plugin backend. 
 
 
 ```
