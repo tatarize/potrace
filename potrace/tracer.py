@@ -122,9 +122,9 @@ def pointslope(pp: Path, i: int, j: int, ctr: Point, dir: Point) -> None:
     ctr.x = x / k
     ctr.y = y / k
 
-    a = x2 - float(x * x / k) / k
-    b = xy - float(x * y / k) / k
-    c = y2 - float(y * y / k) / k
+    a = float(x2 - x * x / k) / k
+    b = float(xy - x * y / k) / k
+    c = float(y2 - y * y / k) / k
 
     lambda2 = (
         a + c + math.sqrt((a - c) * (a - c) + 4 * b * b)
