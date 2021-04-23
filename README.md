@@ -1,23 +1,24 @@
-# potrace
-Pure Python Port of Potrace. This is intended to be a pure python port of Peter Selinger's Potrace (based on 1.16 code). However, rather than using the original bitmap code we will use the python Pillow library for graphics loading. The intent is that backends provided within Potrace will also be made availible here as well as the option entrypoint plugin backends. This may only end up by svg with optional plugin code.
+# Python potrace
+Pure Python Port of Potrace. This is a python port of Peter Selinger's Potrace (based on 1.16 code).
 
-This port is generally because most python hooks to the original code such as `pypotrace` have installation issues with some of the stuff breaking and not compiling. Also, I thought I could hammer this out in a day after seeing code like https://github.com/kilobtye/potrace javascript port but, since that's implemented licensed in GPL and I wanted this licensed in `GPL2+ and however Peter Selinger's code is licensed`. I needed to port the more feature-rich C code which exceeded my original time estimates.
+Rather than using the original bitmap code this port uses the python Pillow library for graphics loading, and editing.
 
-# Current progress
-* Currently some decomposition with the relevant options with some bugs. Some work still needs to be done for the port.
-* The second phase of line and curve conversion does not yet work.
+This port is needed because many python hooks to the original code such as `pypotrace` have installation issues with some OSes, and compilation problems.
 
 # Installing
-As this currently does not fully work, installing is not recommended and only this package is availible.
 
-The intent, however, is to permit a python entrypoint hook to run the script as one would run original potrace with similar command line arguments.
+The intent is to permit pip installation, however this is not yet an approved port, and cannot be uploaded to pypi until it is. The intent is to use the `potrace` namespace on pypi: https://pypi.org/project/potrace/
+
+
+For now, download the download the package library and type: `pip install -U .` in the package directory. Addon backends will be automatically detected if installed with pip. `backend-svg` for how to author a plugin backend. 
+
 
 ```
-usage: potrace.py [-h] [-v] [-l] [-o OUTPUT] [-b {svg}]
-                  [-z {black,white,left,right,minority,majority,random}]
-                  [-P PROFILE] [-t TURDSIZE] [-a ALPHAMAX] [-n]
-                  [-O OPTTOLERANCE] [-u UNIT] [-C COLOR] [-g] [-f]
-                  [filename]
+usage: potrace [-h] [-v] [-l] [-o OUTPUT] [-b {svg,jagged-svg}]
+               [-z {black,white,left,right,minority,majority,random}]
+               [-t TURDSIZE] [-a ALPHAMAX] [-n] [-O OPTTOLERANCE] [-C COLOR]
+               [-i] [-k BLACKLEVEL] [-s SCALE] [-1]
+               [filename]
 
 positional arguments:
   filename              an input file
@@ -28,7 +29,7 @@ optional arguments:
   -l, --license         prints license info and exit
   -o OUTPUT, --output OUTPUT
                         write all output to this file
-  -b {svg}, --backend {svg}
+  -b {svg,jagged-svg}, --backend {svg,jagged-svg}
                         select backend by name
   -z {black,white,left,right,minority,majority,random}, --turnpolicy {black,white,left,right,minority,majority,random}
                         how to resolve ambiguities in path decomposition
@@ -39,11 +40,14 @@ optional arguments:
   -n, --longcurve       turn off curve optimization
   -O OPTTOLERANCE, --opttolerance OPTTOLERANCE
                         curve optimization tolerance
-  -u UNIT, --unit UNIT  quantize output to 1/unit pixels
   -C COLOR, --color COLOR
                         set foreground color (default Black)
-  -g, --group           group related paths together
-  -f, --flat            whole image as a single path
+  -i, --invert          invert bitmap
+  -k BLACKLEVEL, --blacklevel BLACKLEVEL
+                        invert bitmap
+  -s SCALE, --scale SCALE
+                        Scale the image by an integer factor n>0.
+  -1, --dither          Dither rather than threshold to 1-bit.
 ```
 
 # Requirements
