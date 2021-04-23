@@ -122,14 +122,15 @@ def run():
                         parts.append("M%d,%d" % (path._x0, path._y0))
                         for segment in path._fcurve.segments:
                             if segment.tag == POTRACE_CORNER:
-                                v = segment.c[1]
-                                parts.append("L%f,%f" % (v.x, v.y))
+                                a = segment.c[1]
+                                parts.append("L%f,%f" % (a.x, a.y))
                                 b = segment.c[2]
                                 parts.append("L%f,%f" % (b.x, b.y))
                             else:
-                                w = segment.c[1]
-                                b = segment.c[2]
-                                parts.append("Q%f,%f %f,%f" % (w.x, w.y, b.x, b.y))
+                                a = segment.c[0]
+                                b = segment.c[1]
+                                c = segment.c[2]
+                                parts.append("C%f,%f %f,%f %f,%f" % (a.x, a.y, b.x, b.y, c.x, c.y))
                     parts.append('z')
                 fp.write('<path stroke="black" fill="none" d="%s"/>' % "".join(parts))
                 fp.write("</svg>")
