@@ -8,7 +8,7 @@ POTRACE_CURVETO = 1
 POTRACE_CORNER = 2
 
 INFTY = float("inf")
-COS179 = math.cos(179)
+COS179 = math.cos(math.radians(179))
 
 
 # /* auxiliary functions */
@@ -976,7 +976,7 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
     pt = [0] * (m + 1)  # /* pt[m+1] */
     pen = [0.0] * (m + 1)  # /* pen[m+1] */
     len = [0] * (m + 1)  # /* len[m+1] */
-    opt = [opti_t() for i in range(m + 1)]  # /* opt[m+1] */
+    opt = [None] * (m + 1)  # /* opt[m+1] */
 
     convc = [0.0] * m  # /* conv[m]: pre-computed convexities */
     areac = [0.0] * (m + 1)  # /* cumarea[m+1]: cache for fast area computation */
@@ -1018,22 +1018,25 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
     # /* Fixme: we always start from a fixed point
     # -- should find the best curve cyclically */
 
+    o = None
     for j in range(1, m + 1):
         # /* calculate best path from 0 to j */
         pt[j] = j - 1
         pen[j] = pen[j - 1]
         len[j] = len[j - 1] + 1
         for i in range(j - 2, -1, -1):
-            o = opt[j]
+            if o is None:
+                o = opti_t()
             if opti_penalty(pp, i, mod(j, m), o, opttolerance, convc, areac):
                 break
             if len[j] > len[i] + 1 or (
                 len[j] == len[i] + 1 and pen[j] > pen[i] + o.pen
             ):
-                pt[j] = i
-                pen[j] = pen[i] + opt[j].pen
-                len[j] = len[i] + 1
                 opt[j] = o
+                pt[j] = i
+                pen[j] = pen[i] + o.pen
+                len[j] = len[i] + 1
+                o = None
     om = len[m]
     pp._ocurve = Curve(om)
     s = [None] * om
