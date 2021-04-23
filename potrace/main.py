@@ -108,18 +108,15 @@ def run():
                     % (image.width, image.height)
                 )
                 parts = []
-
-                for path in plist:
-                    if args.decompose_only:
-                        parts.append("M")
+                if args.decompose_only:
+                    parts.append("M")
+                    for path in plist:
                         for point in path.pt:
                             parts.append(" %f,%f" % (point.x, point.y))
-                    else:
-                        # parts.append("M")
-                        # for p in path._po:
-                        #     point = path.pt[p]
-                        #     parts.append(" %f,%f" % (point.x, point.y))
-                        parts.append("M%d,%d" % (path._x0, path._y0))
+                else:
+                    for path in plist:
+                        fs = path._fcurve[-1].c[2]
+                        parts.append("M%f,%f" % (fs.x, fs.y))
                         for segment in path._fcurve.segments:
                             if segment.tag == POTRACE_CORNER:
                                 a = segment.c[1]
@@ -131,11 +128,19 @@ def run():
                                 b = segment.c[1]
                                 c = segment.c[2]
                                 parts.append("C%f,%f %f,%f %f,%f" % (a.x, a.y, b.x, b.y, c.x, c.y))
-                    parts.append('z')
-                fp.write('<path stroke="black" fill="none" d="%s"/>' % "".join(parts))
+                        parts.append('z')
+                fp.write('<path stroke="none" fill="black" fill-rule="evenodd" d="%s"/>' % "".join(parts))
                 fp.write("</svg>")
     else:
         print("No image loaded.")
 
-
+# M346.430 287.028
+# L 410.012 221.556 402.662 214.028
+# C 398.620 209.888,370.429 180.850,340.015 149.500
+# C 309.602 118.150,281.744 89.470,278.109 85.767
+# L 271.500 79.034 202.774 149.767
+# C 164.975 188.670,133.980 220.893,133.897 221.373
+# C 133.815 221.853,164.738 254.139,202.617 293.120
+# L 271.486 363.994 277.167 358.247
+# C 280.291 355.086,311.460 323.038,346.430 287.028
 run()

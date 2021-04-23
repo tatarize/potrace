@@ -580,7 +580,6 @@ def _bestpolygon(pp: Path) -> int:
         i = prev[i]
         pp._po[j] = i
         j -= 1
-    print(pp._po)
     return 0
 
 
