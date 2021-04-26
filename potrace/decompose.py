@@ -602,7 +602,6 @@ def pathlist_to_tree(plist: list, bm: numpy.array) -> None:
 #         list_append(path_t, heap1, p1->childlist)
 #     heap = heap1
 
-
 def bm_to_pathlist(
     bm: numpy.array, turdsize: int = 2, turnpolicy: int = POTRACE_TURNPOLICY_MINORITY
 ) -> list:
