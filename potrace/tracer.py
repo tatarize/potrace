@@ -1098,7 +1098,7 @@ def process_path(
         TRY(_calc_lon(p))
         TRY(_bestpolygon(p))
         TRY(_adjust_vertices(p))
-        if p.sign == "-":  # /* reverse orientation of negative paths */
+        if not p.sign:  # /* reverse orientation of negative paths */
             reverse(p._curve)
         _smooth(p._curve, alphamax)
         if opticurve:
