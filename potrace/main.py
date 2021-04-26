@@ -11,6 +11,7 @@ import sys
 import pkg_resources
 
 from PIL import Image
+import numpy as np
 
 from .decompose import bm_to_pathlist
 from .tracer import process_path
@@ -156,17 +157,20 @@ def run():
                 image = image.resize((scale * image.width, scale * image.height), Image.BICUBIC)
         if args.dither:
             image = image.convert("1")
+            bm = np.invert(image)
+            bm = np.pad(bm, [(0, 1), (0, 1)], mode='constant')
         else:
             if image.mode != "L":
                 image = image.convert("L")
-            if args.invert:
-                points = lambda e: 255 if (e/255.0) < args.blacklevel else 0
-            else:
-                points = lambda e: 0 if (e / 255.0) < args.blacklevel else 255
-            image = image.point(points)
+            image = image.point(lambda e: 0 if (e / 255.0) < args.blacklevel else 255)
             image = image.convert("1")
+            if args.invert:
+                bm = np.array(image)
+            else:
+                bm = np.invert(image)
+            bm = np.pad(bm, [(0, 1), (0, 1)], mode='constant')
 
-        plist = bm_to_pathlist(image, turdsize=args.turdsize, turnpolicy=turnpolicy)
+        plist = bm_to_pathlist(bm, turdsize=args.turdsize, turnpolicy=turnpolicy)
         process_path(
             plist,
             alphamax=args.alphamax,

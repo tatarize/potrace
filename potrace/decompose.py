@@ -1,6 +1,6 @@
 from typing import Optional, Tuple, Union
 
-from PIL import Image
+import numpy
 
 from .structures import *
 
@@ -290,13 +290,7 @@ def detrand(x: int, y: int) -> int:
     return z
 
 
-def BM_GET(bm: Image.Image, x: int, y: int):
-    return (
-        bm.getpixel((x, y)) == 0 if 0 <= x < bm.width and 0 <= y < bm.height else False
-    )
-
-
-def majority(bm: Image, x: int, y: int) -> int:
+def majority(bm: numpy.array, x: int, y: int) -> int:
     """
      /* return the "majority" value of bitmap bm at intersection (x,y). We
     assume that the bitmap is balanced at "radius" 1.  */
@@ -304,10 +298,22 @@ def majority(bm: Image, x: int, y: int) -> int:
     for i in range(2, 5):  # /* check at "radius" i */
         ct = 0
         for a in range(-i + 1, i - 2):
-            ct += 1 if BM_GET(bm, x + a, y + i - 1) else -1
-            ct += 1 if BM_GET(bm, x + i - 1, y + a - 1) else -1
-            ct += 1 if BM_GET(bm, x + a - 1, y - i) else -1
-            ct += 1 if BM_GET(bm, x - i, y + a) else -1
+            try:
+                ct += 1 if bm[y + i - 1][x + a] else -1
+            except IndexError:
+                pass
+            try:
+                ct += 1 if bm[y + a - 1][x + i - 1] else -1
+            except IndexError:
+                pass
+            try:
+                ct += 1 if bm[y - i][x + a - 1] else -1
+            except IndexError:
+                pass
+            try:
+                ct += 1 if bm[y + a][x - i] else -1
+            except IndexError:
+                pass
         if ct > 0:
             return 1
         elif ct < 0:
@@ -321,29 +327,28 @@ def majority(bm: Image, x: int, y: int) -> int:
 """
 
 
-def xor_to_ref(bm: Image.Image, x: int, y: int, xa: int) -> None:
+def xor_to_ref(bm: numpy.array, x: int, y: int, xa: int) -> None:
     """
      /* efficiently invert bits [x,infty) and [xa,infty) in line y. Here xa
     must be a multiple of BM_WORDBITS. */
     """
+
     if x < xa:
-        for i in range(x, xa):
-            bm.putpixel((i, y), bm.getpixel((i, y)) ^ 0xFF)
-    else:
-        for i in range(xa, x):
-            bm.putpixel((i, y), bm.getpixel((i, y)) ^ 0xFF)
+        bm[y, x:xa] ^= True
+    elif x != xa:
+        bm[y, xa:x] ^= True
 
 
-def xor_path(bm: Image.Image, p: Path) -> None:
+def xor_path(bm: numpy.array, p: Path) -> None:
     """
-    /* a path is represented as an array of points, which are thought to
-       lie on the corners of pixels (not on their centers). The path point
-       (x,y) is the lower left corner of the pixel (x,y). Paths are
-       represented by the len/pt components of a path_t object (which
-       also stores other information about the path) */
+    a path is represented as an array of points, which are thought to
+    lie on the corners of pixels (not on their centers). The path point
+    (x,y) is the lower left corner of the pixel (x,y). Paths are
+    represented by the len/pt components of a path_t object (which
+    also stores other information about the path) */
 
-    /* xor the given pixmap with the interior of the given path. Note: the
-       path must be within the dimensions of the pixmap. */
+    xor the given pixmap with the interior of the given path. Note: the
+    path must be within the dimensions of the pixmap.
     """
     if len(p) <= 0:  # /* a path of length 0 is silly, but legal */
         return
@@ -358,7 +363,7 @@ def xor_path(bm: Image.Image, p: Path) -> None:
             y1 = y
 
 
-def findpath(bm: Image, x0: int, y0: int, sign: str, turnpolicy: int) -> Path:
+def findpath(bm: numpy.array, x0: int, y0: int, sign: bool, turnpolicy: int) -> Path:
     """
     /* compute a path in the given pixmap, separating black from white.
     Start path at the point (x0,x1), which must be an upper left corner
@@ -388,14 +393,24 @@ def findpath(bm: Image, x0: int, y0: int, sign: str, turnpolicy: int) -> Path:
             break
 
         # /* determine next direction */
-        c = BM_GET(bm, x + (dirx + diry - 1) // 2, y + (diry - dirx - 1) // 2)
-        d = BM_GET(bm, x + (dirx - diry - 1) // 2, y + (diry + dirx - 1) // 2)
+        cy = y + (diry - dirx - 1) // 2
+        cx = x + (dirx + diry - 1) // 2
+        try:
+            c = bm[cy][cx]
+        except IndexError:
+            c = 0
+        dy = y + (diry + dirx - 1) // 2
+        dx = x + (dirx - diry - 1) // 2
+        try:
+            d = bm[dy][dx]
+        except IndexError:
+            d = 0
 
         if c and not d:  # /* ambiguous turn */
             if (
                 turnpolicy == POTRACE_TURNPOLICY_RIGHT
-                or (turnpolicy == POTRACE_TURNPOLICY_BLACK and sign == "+")
-                or (turnpolicy == POTRACE_TURNPOLICY_WHITE and sign == "-")
+                or (turnpolicy == POTRACE_TURNPOLICY_BLACK and sign)
+                or (turnpolicy == POTRACE_TURNPOLICY_WHITE and not sign)
                 or (turnpolicy == POTRACE_TURNPOLICY_RANDOM and detrand(x, y))
                 or (turnpolicy == POTRACE_TURNPOLICY_MAJORITY and majority(bm, x, y))
                 or (
@@ -422,7 +437,7 @@ def findpath(bm: Image, x0: int, y0: int, sign: str, turnpolicy: int) -> Path:
     return Path(pt, area, sign)
 
 
-def findnext(bm: Image.Image, xp: int, yp: int) -> Optional[Tuple[Union[int], int]]:
+def findnext(bm: numpy.array) -> Optional[Tuple[Union[int], int]]:
     """
     /* find the next set pixel in a row <= y. Pixels are searched first
        left-to-right, then top-down. In other words, (x,y)<(x',y') if y>y'
@@ -430,17 +445,14 @@ def findnext(bm: Image.Image, xp: int, yp: int) -> Optional[Tuple[Union[int], in
        (*xp,*yp). Else return 1. Note that this function assumes that
        excess bytes have been cleared with bm_clearexcess. */
     """
-    x0 = xp
-    for y in range(yp, -1, -1):
-        x = x0
-        while bm.width > x >= 0:
-            if BM_GET(bm, x, y):
-                # /* found */
-                return x, y
-            x += 1
-        x0 = 0
-    # /* not found */
-    return None
+    w = numpy.nonzero(bm)
+    if len(w[0]) == 0:
+        return None
+
+    q = numpy.where(w[0] == w[0][-1])
+    y = w[0][q]
+    x = w[1][q]
+    return y[0], x[0]
 
 
 def setbbox_path(p: Path):
@@ -467,7 +479,7 @@ def setbbox_path(p: Path):
     return x0, y0, x1, y1
 
 
-def pathlist_to_tree(plist: list, bm: Image.Image) -> None:
+def pathlist_to_tree(plist: list, bm: numpy.array) -> None:
     """
     /* Give a tree structure to the given path list, based on "insideness"
        testing. I.e., path A is considered "below" path B if it is inside
@@ -493,7 +505,7 @@ def pathlist_to_tree(plist: list, bm: Image.Image) -> None:
     # path_t **hook_in, **hook_out #/* for fast appending to linked list */
     # bbox_t bbox
 
-    bm = Image.new("1", (bm.width, bm.height))
+    bm = bm.copy()
 
     # /* save original "next" pointers */
 
@@ -590,9 +602,8 @@ def pathlist_to_tree(plist: list, bm: Image.Image) -> None:
 #         list_append(path_t, heap1, p1->childlist)
 #     heap = heap1
 
-
 def bm_to_pathlist(
-    bm: Image.Image, turdsize: int = 2, turnpolicy: int = POTRACE_TURNPOLICY_MINORITY
+    bm: numpy.array, turdsize: int = 2, turnpolicy: int = POTRACE_TURNPOLICY_MINORITY
 ) -> list:
     """
     /* Decompose the given bitmap into paths. Returns a linked list of
@@ -601,31 +612,29 @@ def bm_to_pathlist(
     set. */
     """
     plist = []  # /* linked list of path objects */
-    bm1 = bm.copy()
+    original = bm.copy()
 
     """/* be sure the byte padding on the right is set to 0, as the fast
     pixel search below relies on it */"""
     # /* iterate through components */
-    x = 0
-    y = bm1.height - 1
     while True:
-        n = findnext(bm1, x, y)
+        n = findnext(bm)
         if n is None:
             break
-        x, y = n
+        y, x = n
         # /* calculate the sign by looking at the original */
-        sign = "+" if BM_GET(bm, x, y) else "-"
+        sign = original[y][x]
         # /* calculate the path */
-        path = findpath(bm1, x, y + 1, sign, turnpolicy)
+        path = findpath(bm, x, y + 1, sign, turnpolicy)
         if path is None:
             raise ValueError
 
         # /* update buffered image */
-        xor_path(bm1, path)
+        xor_path(bm, path)
 
         # /* if it's a turd, eliminate it, else append it to the list */
         if path.area > turdsize:
             plist.append(path)
 
-    # pathlist_to_tree(plist, bm1)
+    # pathlist_to_tree(plist, original)
     return plist

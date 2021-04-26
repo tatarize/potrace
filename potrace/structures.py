@@ -43,7 +43,7 @@ class Sums:
 
 
 class Path:
-    def __init__(self, pt, area, sign):
+    def __init__(self, pt: list, area: int, sign: bool):
         self.pt = pt  # /* pt[len]: path as extracted from bitmap */
 
         self.area = area

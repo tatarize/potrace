@@ -299,7 +299,6 @@ def tangent(p0: Point, p1: Point, p2: Point, p3: Point, q0: Point, q1: Point) ->
 
 # ----------------------------------------------------------------------
 
-
 def _calc_sums(path: Path) -> int:
     """Preparation: fill in the sum* fields of a path (used for later
     rapid summing). Return 0 on success, 1 with errno set on
@@ -326,7 +325,6 @@ def _calc_sums(path: Path) -> int:
         path._sums[i + 1].xy = path._sums[i].xy + float(x * y)
         path._sums[i + 1].y2 = path._sums[i].y2 + float(y * y)
     return 0
-
 
 def _calc_lon(pp: Path) -> int:
     """initialize the nc data structure. Point from each point to the
@@ -506,7 +504,6 @@ def penalty3(pp: Path, i: int, j: int) -> float:
     s = ex * ex * a + 2 * ex * ey * b + ey * ey * c
     return math.sqrt(s)
 
-
 def _bestpolygon(pp: Path) -> int:
     """
     /* find the optimal polygon. Fill in the m and po components. Return 1
@@ -590,7 +587,6 @@ def _bestpolygon(pp: Path) -> int:
 /* Stage 3: vertex adjustment (Sec. 2.3.1). */
 
 """
-
 
 def _adjust_vertices(pp: Path) -> int:
     """
@@ -756,7 +752,6 @@ def reverse(curve: Curve) -> None:
 
 
 # /* Always succeeds */
-
 
 def _smooth(curve: Curve, alphamax: float) -> None:
     m = curve.n
@@ -966,7 +961,6 @@ def opti_penalty(
         k = k1
     return 0
 
-
 def _opticurve(pp: Path, opttolerance: float) -> int:
     """
     optimize the path p, replacing sequences of Bezier segments by a
@@ -1079,7 +1073,6 @@ def _opticurve(pp: Path, opttolerance: float) -> int:
 
 # /* ---------------------------------------------------------------------- */
 
-
 def process_path(
     plist: list,
     alphamax=1.0,
@@ -1098,7 +1091,7 @@ def process_path(
         TRY(_calc_lon(p))
         TRY(_bestpolygon(p))
         TRY(_adjust_vertices(p))
-        if p.sign == "-":  # /* reverse orientation of negative paths */
+        if not p.sign:  # /* reverse orientation of negative paths */
             reverse(p._curve)
         _smooth(p._curve, alphamax)
         if opticurve:
