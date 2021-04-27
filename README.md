@@ -10,16 +10,19 @@ This port is needed because many python hooks to the original code such as `pypo
 # Installing
 
 To install or use as a requirement:
-`pip install potrace`
+* `pip install potrace`
 
-If you wish to use the Command Line Interface that is stored in a sister project `potrace-cli`. This can be installed with:
-`pip install potrace[cli]`
+### Potrace-CLI
+If you wish to use the Command Line Interface that is stored in a sister project `potrace-cli` (https://github.com/tatarize/potrace-cli). This can be installed with:
+* `pip install potrace[cli]`
+
 or:
-`pip install potrace-cli`
+
+* `pip install potrace-cli`
 
 The cli project contains valid console script entrypoints for potrace. If you install the command-line package it will add `potrace` to your console scripts.
 
-Warning: This may conflict with runtime namespace of regular potrace. Be certain this is your intent.
+Warning: This may conflict with runtime namespace of regular potrace. Be certain this is your intent. `pip uninstall potrace-cli` will uninstall if needed.
 
 
 # Requirements
