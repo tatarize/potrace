@@ -1,4 +1,4 @@
-# Python potrace
+# Python Potrace
 Pure Python Port of Potrace. This is a python port of Peter Selinger's Potrace (based on 1.16 code).
 
 <img width="200" height="200" src="https://gist.githubusercontent.com/tatarize/42884e5e99cda88aa5ddc2b0ab280973/raw/488cafa1811bd2227458390804910fbc4a90b9ea/head.svg"/>
@@ -24,14 +24,17 @@ The cli project contains valid console script entrypoints for potrace. If you in
 
 Warning: This may conflict with runtime namespace of regular potrace. Be certain this is your intent. `pip uninstall potrace-cli` will uninstall if needed.
 
-
 # Requirements
 * numpy: for bitmap structures.
+
+# Speed
+Being written in python this code may be about 500x slower than the pure-c potrace. It is however fast enough for general use.
 
 # Parallel Projects
 This project intentionally duplicates a considerable amount of the API of `pypotrace` such that this library can be used as a drop-in replacement.
 
 This library offers CLI potrace as an optional package, to permit performing potrace commands from the commandline.
+
 
 # License
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2, or (at your option) any later version.
