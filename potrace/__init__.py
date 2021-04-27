@@ -1,0 +1,18 @@
+name = "potrace"
+
+from .potrace import (
+    Bitmap,
+    Path,
+    Curve,
+    BezierSegment,
+    CornerSegment,
+    POTRACE_CORNER,
+    POTRACE_CURVETO,
+    POTRACE_TURNPOLICY_BLACK,
+    POTRACE_TURNPOLICY_MAJORITY,
+    POTRACE_TURNPOLICY_WHITE,
+    POTRACE_TURNPOLICY_MINORITY,
+    POTRACE_TURNPOLICY_RIGHT,
+    POTRACE_TURNPOLICY_LEFT,
+    POTRACE_TURNPOLICY_RANDOM,
+)
