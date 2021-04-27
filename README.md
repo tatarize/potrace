@@ -10,11 +10,11 @@ This port is needed because many python hooks to the original code such as `pypo
 # Installing
 
 To install or use as a requirement:
-* `pip install potrace`
+* `pip install potracer`
 
 ### Potrace-CLI
 If you wish to use the Command Line Interface that is stored in a sister project `potrace-cli` (https://github.com/tatarize/potrace-cli). This can be installed with:
-* `pip install potrace[cli]`
+* `pip install potracer[cli]`
 
 or:
 
