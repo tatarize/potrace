@@ -20,9 +20,7 @@ or:
 
 * `pip install potrace-cli`
 
-The cli project contains valid console script entrypoints for potrace. If you install the command-line package it will add `potrace` to your console scripts.
-
-Warning: This may conflict with runtime namespace of regular potrace. Be certain this is your intent. `pip uninstall potrace-cli` will uninstall if needed.
+The cli project contains valid console script entrypoints for potrace. If you install the command-line package it will add `potracer` to your console scripts. Note the -r suffix so that it does not interfere with potrace that may be otherwise installed.
 
 # Requirements
 * numpy: for bitmap structures.
