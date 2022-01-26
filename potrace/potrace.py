@@ -883,7 +883,7 @@ def dorth_infty(p0: _Point, p2: _Point):
     return a direction that is 90 degrees counterclockwise from p2-p0,
     but then restricted to one of the major wind directions (n, nw, w, etc)
     """
-    return _Point(sign(p2.x - p0.x), -sign(p2.y - p0.y))
+    return _Point(-sign(p2.y - p0.y), sign(p2.x - p0.x))
 
 
 def dpara(p0: _Point, p1: _Point, p2: _Point) -> float:
