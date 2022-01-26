@@ -21,13 +21,16 @@ COS179 = math.cos(math.radians(179))
 
 class Bitmap:
     def __init__(self, data, blacklevel=0.5):
-        self.data = data
+        if hasattr(data, "dtype"):
+            if data.dtype != "bool":
+                data = data > (255 * blacklevel)
         if hasattr(data, "mode"):
             if data.mode != "L":
                 data = data.convert("L")
             data = data.point(lambda e: 0 if (e / 255.0) < blacklevel else 255)
             image = data.convert("1")
-            self.data = np.array(image)
+            data = np.array(image)
+        self.data = data
         self.invert()
 
     def invert(self):
