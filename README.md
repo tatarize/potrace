@@ -4,6 +4,9 @@ Pure Python Port of Potrace. This is a python port of Peter Selinger's Potrace (
 <img width="200" height="200" src="https://gist.githubusercontent.com/tatarize/42884e5e99cda88aa5ddc2b0ab280973/raw/488cafa1811bd2227458390804910fbc4a90b9ea/head.svg"/>
 
 ![head-orig3](https://user-images.githubusercontent.com/3302478/115929160-2757f180-a43c-11eb-88dc-1320706c9a3f.png)
+> Note: This image has been scaled up by a factor of 3.
+
+![head-scaled](https://user-images.githubusercontent.com/3302478/154810339-6a444bfa-3f2e-4ad0-91cf-40570838a918.png)
 
 This port is needed because many python hooks to the original code such as `pypotrace` have installation issues and compilation problems with some OSes. This potrace is written in pure python and will be compatible with basically anything.
 
@@ -20,7 +23,7 @@ or:
 
 * `pip install potrace-cli`
 
-The cli project contains valid console script entrypoints for potrace. If you install the command-line package it will add `potracer` to your console scripts. Note the -r suffix so that it does not interfere with potrace that may be otherwise installed.
+The cli project contains valid console script entrypoints for potrace. If you install the command-line package it will add `potracer` to your console scripts. Note the `-r` suffix so that it does not interfere with potrace that may be otherwise installed.
 
 # Requirements
 * numpy: for bitmap structures.
@@ -31,7 +34,7 @@ Being written in python this code may be about 500x slower than the pure-c potra
 # Parallel Projects
 This project intentionally duplicates a considerable amount of the API of `pypotrace` such that this library can be used as a drop-in replacement.
 
-This library offers CLI potrace as an optional package, to permit performing potrace commands from the commandline.
+To permit performing potrace commands from the commandline, this library offers CLI potrace as an optional package.
 
 
 # License
