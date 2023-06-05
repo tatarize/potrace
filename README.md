@@ -15,6 +15,16 @@ This port is needed because many python hooks to the original code such as `pypo
 To install or use as a requirement:
 * `pip install potracer`
 
+# Usage Example
+```python
+from potrace.wrapper import get_default_settings, convert_png_to_svg
+
+if __name__ == '__main__':
+    settings = get_default_settings()
+    settings['output'] = "output_filename.svg"
+    convert_png_to_svg('input_filename.png', **settings)
+```
+
 ### Potrace-CLI
 If you wish to use the Command Line Interface that is stored in a sister project `potrace-cli` (https://github.com/tatarize/potrace-cli). This can be installed with:
 * `pip install potracer[cli]`
