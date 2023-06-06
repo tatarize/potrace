@@ -13,7 +13,7 @@ This port is needed because many python hooks to the original code such as `pypo
 # Installing
 
 To install or use as a requirement:
-* `pip install potracer`
+* `python setup.py install`
 
 # Usage Example
 ```python
