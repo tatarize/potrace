@@ -31,6 +31,59 @@ The cli project contains valid console script entrypoints for potrace. If you in
 # Speed
 Being written in python this code may be about 500x slower than the pure-c potrace. It is however fast enough for general use.
 
+# How To Use
+
+This is a barebones script that uses `potracer` to convert a given file to an svg. The file loading is performed with `Pillow`. The file saving is done iterating over the curves inside the plist to produce the SVG with the corners and curves of the potrace structures.
+
+Note: The `bm.trace()` is the primary function call needed for potrace.
+```python
+import sys
+from PIL import Image
+from potrace import Bitmap, POTRACE_TURNPOLICY_MINORITY  # `potracer` library
+
+
+def file_to_svg(filename: str):
+    try:
+
+        image = Image.open(filename)
+    except IOError:
+        print("Image (%s) could not be loaded." % filename)
+        return
+    bm = Bitmap(image, blacklevel=0.5)
+    # bm.invert()
+    plist = bm.trace(
+        turdsize=2,
+        turnpolicy=POTRACE_TURNPOLICY_MINORITY,
+        alphamax=1,
+        opticurve=False,
+        opttolerance=0.2,
+    )
+    with open(f"{filename}.svg", "w") as fp:
+        fp.write(
+            f'''<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{image.width}" height="{image.height}" viewBox="0 0 {image.width} {image.height}">''')
+        parts = []
+        for curve in plist:
+            fs = curve.start_point
+            parts.append(f"M{fs.x},{fs.y}")
+            for segment in curve.segments:
+                if segment.is_corner:
+                    a = segment.c
+                    b = segment.end_point
+                    parts.append(f"L{a.x},{a.y}L{b.x},{b.y}")
+                else:
+                    a = segment.c1
+                    b = segment.c2
+                    c = segment.end_point
+                    parts.append(f"C{a.x},{a.y} {b.x},{b.y} {c.x},{c.y}")
+            parts.append("z")
+        fp.write(f'<path stroke="none" fill="black" fill-rule="evenodd" d="{"".join(parts)}"/>')
+        fp.write("</svg>")
+
+
+if __name__ == '__main__':
+    file_to_svg(sys.argv[1])
+```
+
 # Parallel Projects
 This project intentionally duplicates a considerable amount of the API of `pypotrace` such that this library can be used as a drop-in replacement.
 
